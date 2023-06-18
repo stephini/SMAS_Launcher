@@ -1,0 +1,6 @@
+Pillow
+configparser
+gitpython
+Pillow
+requests
+zstandard
