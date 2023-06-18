@@ -1,0 +1,3 @@
+A simple Super Mario All-Stars launcher for the Super Mario All-Stars branch of the Super Mario World port by snesrev https://github.com/snesrev/smw
+
+copy project files into the folder where your smw.exe file is located place your sfc files in the sfcs folder, place your box arts with dimensions (width=267, height=400) in png format in the pngs folder, install pillow using pip install pillow. Run launcher.pyw.
