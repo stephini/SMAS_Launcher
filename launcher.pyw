@@ -4,11 +4,18 @@ from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry  # Added import 
 from PIL import Image, ImageTk
 import configparser
 import winsound
+import zstandard
+import hashlib
+from git import Repo
+import shutil
+import requests
+import zipfile
+import subprocess
 
 # Path to the folder containing sfc files and PNG images
-sfc_folder = ".\sfcs"
-image_folder = ".\pngs"
-launcher_folder = ".\launcher"
+sfc_folder = os.path.join( ".", "sfcs")
+image_folder = os.path.join(".", "pngs")
+launcher_folder = os.path.join(".", "launcher")
 smw_path = "smw.exe"  # Update with the actual path
 ini_path = "smw.ini"  # Update with the actual path to your INI file
 background_color = "#4271B7"
@@ -228,6 +235,124 @@ def show_options_window():
 
     options_window.mainloop()
 
+def extract_smas():
+    SHA1_HASH = 'c05817c5b7df2fbfe631563e0b37237156a8f6b6' # smas
+    SHA1_HASH_SMB1 = '4a5278150f3395419d68cb02a42f7c3c62cdf8b4'
+    SHA1_HASH_SMBLL = '493e14812af7a92d0eacf00ba8bb6d3a266302ca'
+
+    smas = open('smas.sfc', 'rb').read()
+    hash = hashlib.sha1(smas).hexdigest()
+    if hash != SHA1_HASH:
+      raise Exception('You need SMAS with sha1 ' + SHA1_HASH + ' yours is ' + hash)
+
+    dict_data = zstandard.ZstdCompressionDict(smas)
+
+    cctx = zstandard.ZstdDecompressor(dict_data=dict_data)
+    out = cctx.decompress(open('smb1.zst', 'rb').read())
+
+    hash = hashlib.sha1(out).hexdigest()
+    if hash != SHA1_HASH_SMB1:
+      raise Exception('Error. SMB1 hash is supposed to be ' + SHA1_HASH_SMB1 + ' yours is ' + hash)
+
+    with open('smb1.sfc', 'wb') as ofp:
+        ofp.write(out)
+
+
+    cctx = zstandard.ZstdDecompressor(dict_data=dict_data)
+    out = cctx.decompress(open('smbll.zst', 'rb').read())
+
+    hash = hashlib.sha1(out).hexdigest()
+    if hash != SHA1_HASH_SMBLL:
+      raise Exception('Error. SMBLL hash is supposed to be ' + SHA1_HASH_SMBLL + ' yours is ' + hash)
+
+    with open('smbll.sfc', 'wb') as ofp:
+        ofp.write(out)
+
+    
+def git_clone(repo_url, destination_path, branch=None):
+    Repo.clone_from(repo_url, to_path=destination_path, branch=branch)
+
+def filefextract(url):
+    filename = url.split("/")[-1]
+    destination_dir = os.path.join(".", "source", "smw", "third_party")
+
+    # Download the file
+    response = requests.get(url)
+    response.raise_for_status()
+
+    # Save the file
+    with open(filename, "wb") as file:
+        file.write(response.content)
+
+    # Extract the file to the destination directory
+    with zipfile.ZipFile(filename, "r") as zip_ref:
+        zip_ref.extractall(destination_dir)
+
+    # Delete the downloaded zip file
+    os.remove(filename)
+    
+def build_with_tcc():
+    batch_code = '''
+@echo off
+set SDL2=third_party\SDL2-2.26.5
+third_party\\tcc\\tcc.exe -osmw.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -I%SDL2%/include -L%SDL2%/lib/x64 -lSDL2 -I. src/*.c src/snes/*.c third_party/gl_core/gl_core_3_1.c smb1/*.c smbll/*.c
+copy %SDL2%\\lib\\x64\\SDL2.dll .
+'''
+
+    temp_file_dir = os.path.join(".","source","smw")
+    print(f"temp_file_dir = {temp_file_dir}")
+    temp_file_path= os.path.join(temp_file_dir, "run_with_tcc_temp.bat")
+    print(f"temp_file_path = {temp_file_path}")
+    with open(temp_file_path, 'w') as file:
+        file.write(batch_code)
+    if os.path.exists(temp_file_dir):
+        print("this is where i'd keep my subprocess, IF I HAD ONE!")
+        completed_process = subprocess.run(["cmd", "/c", "run_with_tcc_temp.bat"], cwd=temp_file_dir, capture_output=True, text=True)
+        print(completed_process.stdout)
+        print(completed_process.stderr)
+    else:
+        print(f"Directory not found: {temp_file_dir}")
+
+    os.remove(temp_file_path)
+    
+def build_game():
+    git_clone("https://github.com/snesrev/smw.git", os.path.join(".", "source", "smw"), "smb1")
+    for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
+       shutil.copy2(os.path.join(".", "source", "smw", "other", file_name), os.path.join(".", file_name))
+    extract_smas()
+    filefextract("https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip")
+    filefextract("https://github.com/libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip")
+    subprocess.call(os.path.join(".",  "source", "smw", "run_with_tcc.bat"), cwd=os.path.join(".",  "source", "smw"), shell=True)
+    build_with_tcc()
+    for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
+        print(f"move {file_name}")
+        shutil.copy2(os.path.join(".", "source", "smw", file_name), os.path.join(".", file_name))
+    print("git launcher")
+    git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(".", "source", "smasl"))
+    for folder_name in ["launcher", "pngs", "sfcs"]:
+        print(f"make {folder_name}")
+        os.makedirs(folder_name, exist_ok=True)
+    for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
+        print(f"move {file_name}")
+        shutil.move(os.path.join( ".", file_name), os.path.join(".", "sfcs", file_name))
+    for file_name in ["smb1.png", "smbll.png", "smw.png"]:
+        print(f"copy {file_name}")
+        shutil.copy2(os.path.join( ".", "source", "smasl", "pngs", file_name), os.path.join(".", "pngs", file_name))
+    for file_name in ["smas.wav", "mario.png"]:
+        print(f"copy {file_name}")
+        shutil.copy2(os.path.join( ".", "source", "smasl", "launcher", file_name), os.path.join(".", "launcher", file_name))
+    for file_name in ["smbll.zst", "smb1.zst"]:
+        os.remove(file_name)
+    for file_name in ["smas.sfc", "dependencies.txt"]:
+        shutil.move(os.path.join(".", file_name),os.path.join(".", "launcher", file_name))
+
+def main():
+    if not os.path.exists(os.path.join(".", "smw.exe")):
+        build_game()
+    
+    
+
+main()
 
 # Create the launcher window
 window = Tk()
@@ -245,7 +370,7 @@ create_buttons(sfcs)
 options_button = Button(window, text="Options", command=show_options_window)
 options_button.grid(row=(len(sfcs) + 3) // 4, column=0, columnspan=4, padx=10, pady=10)
 
-audio_file_path = f"{launcher_folder}\{bgm_location}"  # Replace with the actual path to your audio file
+audio_file_path = os.path.join(launcher_folder, bgm_location)  # Replace with the actual path to your audio file
 winsound.PlaySound(audio_file_path, winsound.SND_LOOP | winsound.SND_ASYNC)
 
 window.mainloop()
