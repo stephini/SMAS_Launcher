@@ -270,7 +270,7 @@ def extract_smas():
     
 def git_clone(repo_url, destination_path, branch=None):
     # Run Git command using Git Portable
-    git_executable = os.path.join(".", "source", "git-portable", "git.exe")
+    git_executable = os.path.join(".", "source", "git-portable", "cmd", "git.exe")
     command = [git_executable, "clone"]
     if branch is not None:
         command += ["--branch", branch]
