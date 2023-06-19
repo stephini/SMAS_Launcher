@@ -4,6 +4,8 @@
 # Ignore SFC files
 *.sfc
 
+# Ignore the test files
+builder/
 
 # Ignore git batch files
 gitaddfiles.bat

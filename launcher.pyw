@@ -12,7 +12,9 @@ import zipfile
 import subprocess
 
 # Path to the folder containing sfc files and PNG images
-install_dir = os.getcwd()
+appdata_path = os.getenv('APPDATA')
+script_name = "SMAS Launcher"
+install_dir = os.path.join(appdata_path, script_name)
 sfc_dir = os.path.join( install_dir, "sfcs")
 image_dir = os.path.join(install_dir, "pngs")
 launcher_dir = os.path.join(install_dir, "launcher")
@@ -24,11 +26,12 @@ smw_dir = os.path.join(install_dir, "source", "smw")
 smasl_dir = os.path.join(install_dir, "source", "smasl")
 git_dir = os.path.join(install_dir, "source", "git-portable")
 
-def launch_mario(sfc_path):
+def launch_mario(sfc_path, window):
     window.destroy()  # Close the launcher window
-    mario_command = f"{smw_path} {sfc_path}"
+    mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
     winsound.PlaySound(None, winsound.SND_PURGE)
-    os.system(mario_command)
+    #os.system(mario_command)
+    subprocess.run(mario_command, cwd=install_dir)
 
 def scan_sfcs_folder():
     sfcs = []
@@ -37,14 +40,14 @@ def scan_sfcs_folder():
             sfcs.append(file)
     return sfcs
 
-def create_button(sfc, image, row, column):
-    button = Button(window, image=image, command=lambda: launch_mario(os.path.join(sfc_dir, sfc)))
+def create_button(sfc, image, row, column, window):
+    button = Button(window, image=image, command=lambda: launch_mario(os.path.join(sfc_dir, sfc), window))
     button.image = image
     button.grid(row=row, column=column, padx=10, pady=10)  # Set padding between buttons
     button.config(width=267, height=400)  # Set the desired width and height of the buttons
 
 
-def create_buttons(sfcs):
+def create_buttons(sfcs, window):
     priority_sfcs = ["smb1.sfc", "smbll.sfc", "smw.sfc"]
 
     # Custom sorting function
@@ -67,7 +70,7 @@ def create_buttons(sfcs):
             image = ImageTk.PhotoImage(Image.open(default_image_path))
         row = index // num_columns
         column = index % num_columns
-        create_button(sfc, image, row, column)
+        create_button(sfc, image, row, column, window)
 
 def read_ini_options():
     config = configparser.ConfigParser()
@@ -243,7 +246,7 @@ def extract_smas():
     SHA1_HASH_SMB1 = '4a5278150f3395419d68cb02a42f7c3c62cdf8b4'
     SHA1_HASH_SMBLL = '493e14812af7a92d0eacf00ba8bb6d3a266302ca'
 
-    smas = open('smas.sfc', 'rb').read()
+    smas = open(os.path.join(install_dir, 'smas.sfc'), 'rb').read()
     hash = hashlib.sha1(smas).hexdigest()
     if hash != SHA1_HASH:
       raise Exception('You need SMAS with sha1 ' + SHA1_HASH + ' yours is ' + hash)
@@ -251,24 +254,24 @@ def extract_smas():
     dict_data = zstandard.ZstdCompressionDict(smas)
 
     cctx = zstandard.ZstdDecompressor(dict_data=dict_data)
-    out = cctx.decompress(open('smb1.zst', 'rb').read())
+    out = cctx.decompress(open(os.path.join(install_dir, 'smb1.zst'), 'rb').read())
 
     hash = hashlib.sha1(out).hexdigest()
     if hash != SHA1_HASH_SMB1:
       raise Exception('Error. SMB1 hash is supposed to be ' + SHA1_HASH_SMB1 + ' yours is ' + hash)
 
-    with open('smb1.sfc', 'wb') as ofp:
+    with open(os.path.join(install_dir, 'smb1.sfc'), 'wb') as ofp:
         ofp.write(out)
 
 
     cctx = zstandard.ZstdDecompressor(dict_data=dict_data)
-    out = cctx.decompress(open('smbll.zst', 'rb').read())
+    out = cctx.decompress(open(os.path.join(install_dir, 'smbll.zst'), 'rb').read())
 
     hash = hashlib.sha1(out).hexdigest()
     if hash != SHA1_HASH_SMBLL:
       raise Exception('Error. SMBLL hash is supposed to be ' + SHA1_HASH_SMBLL + ' yours is ' + hash)
 
-    with open('smbll.sfc', 'wb') as ofp:
+    with open(os.path.join(install_dir, 'smbll.sfc'), 'wb') as ofp:
         ofp.write(out)
 
     
@@ -326,6 +329,8 @@ copy %SDL2%\\lib\\x64\\SDL2.dll .
     os.remove(temp_file_path)
     
 def build_game():
+    for file_name in ["smas.sfc", "smw.sfc"]:
+        shutil.move(file_name,os.path.join(install_dir, file_name))
     git_gud()
     git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir), "smb1")
     for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
@@ -333,27 +338,20 @@ def build_game():
     extract_smas()
     filefextract("https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip")
     filefextract("https://github.com/libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip")
-    subprocess.call(os.path.join(smw_dir, "run_with_tcc.bat"), cwd=os.path.join(smw_dir), shell=True)
     build_with_tcc()
     for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
-        print(f"move {file_name}")
         shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
-    print("git launcher")
-    git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(smasl_dir))
+    git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(install_dir, smasl_dir))
     for folder_name in ["launcher", "pngs", "sfcs"]:
-        print(f"make {folder_name}")
-        os.makedirs(folder_name, exist_ok=True)
+        os.makedirs(os.path.join( install_dir, folder_name ), exist_ok=True)
     for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
-        print(f"move {file_name}")
         shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
     for file_name in ["smb1.png", "smbll.png", "smw.png"]:
-        print(f"copy {file_name}")
         shutil.copy2(os.path.join( smasl_dir, "pngs", file_name), os.path.join(image_dir, file_name))
     for file_name in ["smas.wav", "mario.png"]:
-        print(f"copy {file_name}")
         shutil.copy2(os.path.join( smasl_dir, "launcher", file_name), os.path.join(launcher_dir, file_name))
     for file_name in ["smbll.zst", "smb1.zst"]:
-        os.remove(file_name)
+        os.remove(os.path.join(install_dir, file_name))
     for file_name in ["smas.sfc"]:
         shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
 
@@ -378,29 +376,33 @@ def git_gud():
     # Delete the downloaded zip file
     os.remove(filename)
 
+def create_launcher_window():
+    # Create the launcher window
+    window = Tk()
+    window.title("Super Mario Launcher")
+    window.geometry("890x470")
+    window.configure(bg=background_color)
+
+    # Scan the folder for available SFC files
+    sfcs = scan_sfcs_folder()
+
+    # Create the buttons for launching each game
+    create_buttons(sfcs, window)
+
+    # Create the options button
+    options_button = Button(window, text="Options", command=show_options_window)
+    options_button.grid(row=(len(sfcs) + 3) // 4, column=0, columnspan=4, padx=10, pady=10)
+
+    audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
+    winsound.PlaySound(audio_file_path, winsound.SND_LOOP | winsound.SND_ASYNC)
+
+    window.mainloop()
+
 def main():
-    if not os.path.exists(os.path.join(install_dir, "smw.exe")):
+    if not os.path.exists(install_dir):
+        os.makedirs(install_dir)
         build_game()
-    
+
+    create_launcher_window()
+
 main()
-
-# Create the launcher window
-window = Tk()
-window.title("Super Mario Launcher")
-window.geometry("890x470")
-window.configure(bg=background_color)
-
-# Scan the folder for available SFC files
-sfcs = scan_sfcs_folder()
-
-# Create the buttons for launching each game
-create_buttons(sfcs)
-
-# Create the options button
-options_button = Button(window, text="Options", command=show_options_window)
-options_button.grid(row=(len(sfcs) + 3) // 4, column=0, columnspan=4, padx=10, pady=10)
-
-audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
-winsound.PlaySound(audio_file_path, winsound.SND_LOOP | winsound.SND_ASYNC)
-
-window.mainloop()
