@@ -1,6 +1,6 @@
 import os
 import sys
-from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry  # Added import statement for Entry widget
+from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry, Canvas  # Added import statement for Entry widget
 from PIL import Image, ImageTk
 import configparser
 import winsound
@@ -10,6 +10,17 @@ import shutil
 import requests
 import zipfile
 import subprocess
+import pygame
+import threading
+
+
+# Animation constants
+SCREEN_WIDTH = 768
+SCREEN_HEIGHT = 696
+FRAME_WIDTH = 256
+FRAME_HEIGHT = 232
+SCALE_FACTOR = 3
+FRAME_DURATION = 10  # milliseconds
 
 # Path to the folder containing sfc files and PNG images
 appdata_path = os.getenv('APPDATA')
@@ -74,7 +85,7 @@ def create_buttons(sfcs, window):
 
 def read_ini_options():
     config = configparser.ConfigParser()
-    config.read(ini_path)
+    config.read(os.path.join(install_dir, ini_path))
 
     options = {}
 
@@ -188,7 +199,7 @@ def write_ini_options(options):
     gamepad_options = config["GamepadMap"]
     gamepad_options["Controls"] = options["GamepadControls"]
 
-    with open(ini_path, "w") as config_file:
+    with open(os.path.join(install_dir, ini_path), "w") as config_file:
         config.write(config_file)
 
 def show_options_window():
@@ -196,6 +207,7 @@ def show_options_window():
     options_window.title("Game Options")
     options_window.geometry("1420x450")
     options_window.configure(bg=background_color)
+    options_window.resizable(False, False)
 
     # Read the current options from the INI file
     options = read_ini_options()
@@ -313,22 +325,24 @@ copy %SDL2%\\lib\\x64\\SDL2.dll .
 '''
 
     temp_file_dir = os.path.join(smw_dir)
-    print(f"temp_file_dir = {temp_file_dir}")
     temp_file_path= os.path.join(temp_file_dir, "run_with_tcc_temp.bat")
-    print(f"temp_file_path = {temp_file_path}")
     with open(temp_file_path, 'w') as file:
         file.write(batch_code)
     if os.path.exists(temp_file_dir):
-        print("this is where i'd keep my subprocess, IF I HAD ONE!")
         completed_process = subprocess.run(["cmd", "/c", "run_with_tcc_temp.bat"], cwd=temp_file_dir, capture_output=True, text=True)
-        print(completed_process.stdout)
-        print(completed_process.stderr)
-    else:
-        print(f"Directory not found: {temp_file_dir}")
-
     os.remove(temp_file_path)
-    
+
+def download_gif():
+    # Download the file
+    response = requests.get("https://drive.google.com/uc?export=view&id=1R5kGmMASaULyWf3PgiUNafm-vdjKNkP5")
+    response.raise_for_status()
+
+    # Save the file
+    with open("downloading.gif", "wb") as file:
+        file.write(response.content)
+
 def build_game():
+    #download_gif()
     for file_name in ["smas.sfc", "smw.sfc"]:
         shutil.move(file_name,os.path.join(install_dir, file_name))
     git_gud()
@@ -398,12 +412,66 @@ def create_launcher_window():
     winsound.PlaySound(audio_file_path, winsound.SND_LOOP | winsound.SND_ASYNC)
 
     window.mainloop()
+    
+def play_animation(build_finished):
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+    pygame.display.set_caption("Splash Screen")
 
+    clock = pygame.time.Clock()
+
+    # Load animation frames
+    frames = []
+    animation_sheet = pygame.image.load("downloading.png")
+    for i in range(7):
+        frame = animation_sheet.subsurface(
+            pygame.Rect(0, i * FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT)
+        )
+        frame = pygame.transform.scale(
+            frame, (FRAME_WIDTH * SCALE_FACTOR, FRAME_HEIGHT * SCALE_FACTOR)
+        )
+        frames.append(frame)
+
+    # Play animation
+    frame_index = 0
+    animation_running = True
+
+    while animation_running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                animation_running = False
+
+        # Limit the frame rate to 30 FPS (33 milliseconds per frame)
+        clock.tick(10)
+
+        frame_index = (frame_index + 1) % len(frames)
+
+        screen.fill((0, 0, 0))
+        screen.blit(
+            frames[frame_index],
+            (
+                (SCREEN_WIDTH - frames[frame_index].get_width()) // 2,
+                (SCREEN_HEIGHT - frames[frame_index].get_height()) // 2,
+            ),
+        )
+        pygame.display.flip()
+
+        # Check if the build is finished
+        if build_finished.is_set():
+            animation_running = False
+    
 def main():
     if not os.path.exists(install_dir):
         os.makedirs(install_dir)
+        build_finished = threading.Event()
+        animation_thread = threading.Thread(target=play_animation, args=(build_finished,))
+        animation_thread.start()
         build_game()
+        build_finished.set()
+        animation_thread.join()
+        pygame.quit()
 
     create_launcher_window()
 
-main()
+if __name__ == "__main__":
+    main()

@@ -3,3 +3,4 @@ configparser
 gitpython
 requests
 zstandard
+imageio
