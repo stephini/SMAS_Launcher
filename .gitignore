@@ -1,0 +1,11 @@
+# Ignore compiled binaries
+*.exe
+
+# Ignore SFC files
+*.sfc
+
+
+# Ignore git batch files
+gitaddfiles.bat
+gitcommit.bat
+gitpush.bat

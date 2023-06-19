@@ -12,13 +12,17 @@ import zipfile
 import subprocess
 
 # Path to the folder containing sfc files and PNG images
-sfc_folder = os.path.join( ".", "sfcs")
-image_folder = os.path.join(".", "pngs")
-launcher_folder = os.path.join(".", "launcher")
+install_dir = os.getcwd()
+sfc_dir = os.path.join( install_dir, "sfcs")
+image_dir = os.path.join(install_dir, "pngs")
+launcher_dir = os.path.join(install_dir, "launcher")
 smw_path = "smw.exe"  # Update with the actual path
 ini_path = "smw.ini"  # Update with the actual path to your INI file
 background_color = "#4271B7"
 bgm_location = "smas.wav"
+smw_dir = os.path.join(install_dir, "source", "smw")
+smasl_dir = os.path.join(install_dir, "source", "smasl")
+git_dir = os.path.join(install_dir, "source", "git-portable")
 
 def launch_mario(sfc_path):
     window.destroy()  # Close the launcher window
@@ -28,13 +32,13 @@ def launch_mario(sfc_path):
 
 def scan_sfcs_folder():
     sfcs = []
-    for file in os.listdir(sfc_folder):
+    for file in os.listdir(sfc_dir):
         if file.lower().endswith(".sfc"):
             sfcs.append(file)
     return sfcs
 
 def create_button(sfc, image, row, column):
-    button = Button(window, image=image, command=lambda: launch_mario(os.path.join(sfc_folder, sfc)))
+    button = Button(window, image=image, command=lambda: launch_mario(os.path.join(sfc_dir, sfc)))
     button.image = image
     button.grid(row=row, column=column, padx=10, pady=10)  # Set padding between buttons
     button.config(width=267, height=400)  # Set the desired width and height of the buttons
@@ -55,11 +59,11 @@ def create_buttons(sfcs):
 
     num_columns = 4  # Number of columns in the grid
     for index, sfc in enumerate(sorted_sfcs):
-        image_path = os.path.join(image_folder, sfc.replace(".sfc", ".png"))
+        image_path = os.path.join(image_dir, sfc.replace(".sfc", ".png"))
         if os.path.exists(image_path):
             image = ImageTk.PhotoImage(Image.open(image_path))
         else:
-            default_image_path = os.path.join(launcher_folder, "mario.png")
+            default_image_path = os.path.join(launcher_dir, "mario.png")
             image = ImageTk.PhotoImage(Image.open(default_image_path))
         row = index // num_columns
         column = index % num_columns
@@ -270,7 +274,7 @@ def extract_smas():
     
 def git_clone(repo_url, destination_path, branch=None):
     # Run Git command using Git Portable
-    git_executable = os.path.join(".", "source", "git-portable", "cmd", "git.exe")
+    git_executable = os.path.join(git_dir, "cmd", "git.exe")
     command = [git_executable, "clone"]
     if branch is not None:
         command += ["--branch", branch]
@@ -280,7 +284,7 @@ def git_clone(repo_url, destination_path, branch=None):
 
 def filefextract(url):
     filename = url.split("/")[-1]
-    destination_dir = os.path.join(".", "source", "smw", "third_party")
+    destination_dir = os.path.join(smw_dir, "third_party")
 
     # Download the file
     response = requests.get(url)
@@ -305,7 +309,7 @@ third_party\\tcc\\tcc.exe -osmw.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STD
 copy %SDL2%\\lib\\x64\\SDL2.dll .
 '''
 
-    temp_file_dir = os.path.join(".","source","smw")
+    temp_file_dir = os.path.join(smw_dir)
     print(f"temp_file_dir = {temp_file_dir}")
     temp_file_path= os.path.join(temp_file_dir, "run_with_tcc_temp.bat")
     print(f"temp_file_path = {temp_file_path}")
@@ -323,41 +327,41 @@ copy %SDL2%\\lib\\x64\\SDL2.dll .
     
 def build_game():
     git_gud()
-    git_clone("https://github.com/snesrev/smw.git", os.path.join(".", "source", "smw"), "smb1")
+    git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir), "smb1")
     for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
-       shutil.copy2(os.path.join(".", "source", "smw", "other", file_name), os.path.join(".", file_name))
+       shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
     extract_smas()
     filefextract("https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip")
     filefextract("https://github.com/libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip")
-    subprocess.call(os.path.join(".",  "source", "smw", "run_with_tcc.bat"), cwd=os.path.join(".",  "source", "smw"), shell=True)
+    subprocess.call(os.path.join(smw_dir, "run_with_tcc.bat"), cwd=os.path.join(smw_dir), shell=True)
     build_with_tcc()
     for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
         print(f"move {file_name}")
-        shutil.copy2(os.path.join(".", "source", "smw", file_name), os.path.join(".", file_name))
+        shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
     print("git launcher")
-    git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(".", "source", "smasl"))
+    git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(smasl_dir))
     for folder_name in ["launcher", "pngs", "sfcs"]:
         print(f"make {folder_name}")
         os.makedirs(folder_name, exist_ok=True)
     for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
         print(f"move {file_name}")
-        shutil.move(os.path.join( ".", file_name), os.path.join(".", "sfcs", file_name))
+        shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
     for file_name in ["smb1.png", "smbll.png", "smw.png"]:
         print(f"copy {file_name}")
-        shutil.copy2(os.path.join( ".", "source", "smasl", "pngs", file_name), os.path.join(".", "pngs", file_name))
+        shutil.copy2(os.path.join( smasl_dir, "pngs", file_name), os.path.join(image_dir, file_name))
     for file_name in ["smas.wav", "mario.png"]:
         print(f"copy {file_name}")
-        shutil.copy2(os.path.join( ".", "source", "smasl", "launcher", file_name), os.path.join(".", "launcher", file_name))
+        shutil.copy2(os.path.join( smasl_dir, "launcher", file_name), os.path.join(launcher_dir, file_name))
     for file_name in ["smbll.zst", "smb1.zst"]:
         os.remove(file_name)
     for file_name in ["smas.sfc"]:
-        shutil.move(os.path.join(".", file_name),os.path.join(".", "launcher", file_name))
+        shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
 
 def git_gud():
     url = "https://github.com/git-for-windows/git/releases/download/v2.41.0.windows.1/MinGit-2.41.0-64-bit.zip"
 
     filename = url.split("/")[-1]
-    destination_dir = os.path.join(".", "source", "git-portable")
+    destination_dir = os.path.join(git_dir)
 
     # Download the file
     response = requests.get(url)
@@ -375,7 +379,7 @@ def git_gud():
     os.remove(filename)
 
 def main():
-    if not os.path.exists(os.path.join(".", "smw.exe")):
+    if not os.path.exists(os.path.join(install_dir, "smw.exe")):
         build_game()
     
 main()
@@ -396,7 +400,7 @@ create_buttons(sfcs)
 options_button = Button(window, text="Options", command=show_options_window)
 options_button.grid(row=(len(sfcs) + 3) // 4, column=0, columnspan=4, padx=10, pady=10)
 
-audio_file_path = os.path.join(launcher_folder, bgm_location)  # Replace with the actual path to your audio file
+audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
 winsound.PlaySound(audio_file_path, winsound.SND_LOOP | winsound.SND_ASYNC)
 
 window.mainloop()
