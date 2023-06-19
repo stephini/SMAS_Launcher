@@ -382,6 +382,7 @@ def create_launcher_window():
     window.title("Super Mario Launcher")
     window.geometry("890x470")
     window.configure(bg=background_color)
+    window.resizable(False, False)
 
     # Scan the folder for available SFC files
     sfcs = scan_sfcs_folder()
