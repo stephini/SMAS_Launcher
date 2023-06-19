@@ -6,7 +6,6 @@ import configparser
 import winsound
 import zstandard
 import hashlib
-from git import Repo
 import shutil
 import requests
 import zipfile
@@ -270,7 +269,14 @@ def extract_smas():
 
     
 def git_clone(repo_url, destination_path, branch=None):
-    Repo.clone_from(repo_url, to_path=destination_path, branch=branch)
+    # Run Git command using Git Portable
+    git_executable = os.path.join(".", "source", "git-portable", "git.exe")
+    command = [git_executable, "clone"]
+    if branch is not None:
+        command += ["--branch", branch]
+    command += [repo_url, destination_path]
+    
+    subprocess.run(command)
 
 def filefextract(url):
     filename = url.split("/")[-1]
@@ -316,6 +322,7 @@ copy %SDL2%\\lib\\x64\\SDL2.dll .
     os.remove(temp_file_path)
     
 def build_game():
+    git_gud()
     git_clone("https://github.com/snesrev/smw.git", os.path.join(".", "source", "smw"), "smb1")
     for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
        shutil.copy2(os.path.join(".", "source", "smw", "other", file_name), os.path.join(".", file_name))
@@ -343,15 +350,34 @@ def build_game():
         shutil.copy2(os.path.join( ".", "source", "smasl", "launcher", file_name), os.path.join(".", "launcher", file_name))
     for file_name in ["smbll.zst", "smb1.zst"]:
         os.remove(file_name)
-    for file_name in ["smas.sfc", "dependencies.txt"]:
+    for file_name in ["smas.sfc"]:
         shutil.move(os.path.join(".", file_name),os.path.join(".", "launcher", file_name))
+
+def git_gud():
+    url = "https://github.com/git-for-windows/git/releases/download/v2.41.0.windows.1/MinGit-2.41.0-64-bit.zip"
+
+    filename = url.split("/")[-1]
+    destination_dir = os.path.join(".", "source", "git-portable")
+
+    # Download the file
+    response = requests.get(url)
+    response.raise_for_status()
+
+    # Save the file
+    with open(filename, "wb") as file:
+        file.write(response.content)
+
+    # Extract the file to the destination directory
+    with zipfile.ZipFile(filename, "r") as zip_ref:
+        zip_ref.extractall(destination_dir)
+
+    # Delete the downloaded zip file
+    os.remove(filename)
 
 def main():
     if not os.path.exists(os.path.join(".", "smw.exe")):
         build_game()
     
-    
-
 main()
 
 # Create the launcher window
