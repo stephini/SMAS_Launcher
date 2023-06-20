@@ -211,6 +211,7 @@ def show_options_window():
     options_window.geometry("1420x450")
     options_window.configure(bg=background_color)
     options_window.resizable(False, False)
+    options_window.iconbitmap(os.path.join(assets_path, 'icon.ico'))
 
     # Read the current options from the INI file
     options = read_ini_options()
@@ -390,6 +391,7 @@ def create_launcher_window():
     window.geometry("890x470")
     window.configure(bg=background_color)
     window.resizable(False, False)
+    window.iconbitmap(os.path.join(assets_path, 'icon.ico'))
 
     # Scan the folder for available SFC files
     sfcs = scan_sfcs_folder()
