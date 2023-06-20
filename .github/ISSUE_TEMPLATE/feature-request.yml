@@ -28,7 +28,5 @@ body:
       label: Examples
       description: |
         Provide some examples and if possible, videos or screenshots to show how your wanted feature exactly works!
-        
-        Include screenshots or video if you like to help demonstrate how you'd like this feature to work
     validations:
       required: false
