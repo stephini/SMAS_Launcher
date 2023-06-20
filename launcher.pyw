@@ -13,6 +13,9 @@ import subprocess
 import pygame
 import threading
 
+# Assets folder stuff
+current_dir = os.path.dirname(sys.argv[0])
+assets_path = os.path.join(current_dir, 'assets')
 
 # Animation constants
 SCREEN_WIDTH = 768
@@ -332,17 +335,7 @@ copy %SDL2%\\lib\\x64\\SDL2.dll .
         completed_process = subprocess.run(["cmd", "/c", "run_with_tcc_temp.bat"], cwd=temp_file_dir, capture_output=True, text=True)
     os.remove(temp_file_path)
 
-def download_gif():
-    # Download the file
-    response = requests.get("https://drive.google.com/uc?export=view&id=1R5kGmMASaULyWf3PgiUNafm-vdjKNkP5")
-    response.raise_for_status()
-
-    # Save the file
-    with open("downloading.gif", "wb") as file:
-        file.write(response.content)
-
 def build_game():
-    #download_gif()
     for file_name in ["smas.sfc", "smw.sfc"]:
         shutil.move(file_name,os.path.join(install_dir, file_name))
     git_gud()
@@ -422,7 +415,7 @@ def play_animation(build_finished):
 
     # Load animation frames
     frames = []
-    animation_sheet = pygame.image.load("downloading.png")
+    animation_sheet = pygame.image.load(os.path.join(assets_path, 'downloading.png'))
     for i in range(7):
         frame = animation_sheet.subsurface(
             pygame.Rect(0, i * FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT)

@@ -3,4 +3,4 @@ configparser
 gitpython
 requests
 zstandard
-imageio
+pygame

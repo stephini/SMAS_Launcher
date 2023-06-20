@@ -7,6 +7,18 @@
 # Ignore the test files
 builder/
 
+# Ignore pyinstaller files
+make exe.bat
+dist/
+build/
+*.spec
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.msi
+
 # Ignore git batch files
 gitaddfiles.bat
 gitcommit.bat
