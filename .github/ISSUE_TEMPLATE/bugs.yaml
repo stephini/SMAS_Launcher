@@ -27,6 +27,13 @@ body:
       description: "A clear explanation or description of what you expected to happen"
     validations:
       required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: "A clear explanation or description of what actually happens instead"
+    validations:
+      required: true
   - type: dropdown
     id: os
     attributes:

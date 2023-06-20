@@ -1,9 +1,32 @@
-name: Feature Request
-description: Ask for a feature or just give ideas!
-labels: [enhancement]
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Feature request
+description: Suggest a new feature for the launcher
+title: "[Feature Request]: "
+labels: ["Enhancement / Feature Request"]
+# assignees:
+#   - octocat
 body:
   - type: textarea
+    id: desc
     attributes:
-      label: What feature do you want to get added? And how it will work?
+      label: Description
+      description: |
+        What feature do you want?
     validations:
       required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior
+      description: |
+        How is your feature gonna work or behave?
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: |
+        Provide some examples and if possible, videos or screenshots to show how your wanted feature exactly works!
+    validations:
+      required: false
