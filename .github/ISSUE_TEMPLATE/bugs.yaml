@@ -1,0 +1,53 @@
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Launcher Bug Report
+description: Found a bug or issue with the launcher? Sumbit it here!
+title: "[BUG]: "
+labels: [Bug]
+# assignees:
+#   - octocat
+body:
+  - type: textarea
+    id: desc
+    attributes:
+      label: Describe the Bug
+      description: "A clear explanation or description of what the bug is"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction Steps
+      description: "Steps to reproduce the behavior"
+    validations:
+      required: true
+  - type: textarea
+    id: expect
+    attributes:
+      label: Expected Behavior
+      description: "A clear explanation or description of what you expected to happen"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: "A clear explanation or description of what actually happens instead"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+      - Windows 11
+      - Windows 10 (64bit)
+    validations:
+      required: true
+  - type: textarea
+    id: logsDumps
+    attributes:
+      label: "Screenshots"
+      description: |
+        Screenshots and images to help with the context of the issue.
+    validations:
+      required: false
