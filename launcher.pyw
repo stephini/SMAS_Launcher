@@ -32,7 +32,7 @@ install_dir = os.path.join(appdata_path, script_name)
 sfc_dir = os.path.join( install_dir, "sfcs")
 image_dir = os.path.join(install_dir, "pngs")
 launcher_dir = os.path.join(install_dir, "launcher")
-smw_path = "smw.exe"  # Update with the actual path
+smw_path = "smw"  # Update with the actual path
 ini_path = "smw.ini"  # Update with the actual path to your INI file
 background_color = "#4271B7"
 bgm_location = "smas.wav"
@@ -51,17 +51,35 @@ def asspat():
     return ass_pat
 
 def launch_mario(sfc_path, window):
-    window.destroy()  # Close the launcher window
-    mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
-    winsound.PlaySound(None, winsound.SND_PURGE)
-    #os.system(mario_command)
-    subprocess.run(mario_command, cwd=install_dir)
+    try:
+        window.destroy()  # Close the launcher window
+
+        # Construct the command
+        mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
+
+        # Run the command
+        subprocess.run(mario_command, cwd=install_dir)
+
+    except FileNotFoundError as e:
+        error_message = f"Error: File not found\n\nFunction: launch_mario\nFile: {e.filename}"
+        messagebox.showerror("File Not Found", error_message)
+
+    except PermissionError as e:
+        error_message = f"Error: Permission denied\n\nFunction: launch_mario\nFile: {e.filename}"
+        messagebox.showerror("Permission Denied", error_message)
+
+    except Exception as e:
+        error_message = f"An error occurred\n\nFunction: launch_mario\n\n{type(e).__name__}: {str(e)}"
+        messagebox.showerror("Error", error_message)
 
 def scan_sfcs_folder():
     sfcs = []
     for file in os.listdir(sfc_dir):
         if file.lower().endswith(".sfc"):
             sfcs.append(file)
+    if not sfcs:
+        error_message = f"No SFC files found."
+        messagebox.showerror("Error", error_message)
     return sfcs
 
 def create_button(sfc, image, row, column, window):
