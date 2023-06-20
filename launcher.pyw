@@ -14,7 +14,7 @@ import pygame
 import threading
 
 # Assets folder stuff
-current_dir = os.path.dirname(sys.argv[0])
+current_dir = "."
 assets_path = os.path.join(current_dir, 'assets')
 
 # Animation constants
@@ -39,6 +39,16 @@ bgm_location = "smas.wav"
 smw_dir = os.path.join(install_dir, "source", "smw")
 smasl_dir = os.path.join(install_dir, "source", "smasl")
 git_dir = os.path.join(install_dir, "source", "git-portable")
+
+# Is code being ran as EXE or PYW
+ExeLoc = os.path.basename(sys.executable).lower()
+
+def asspat():
+    if ExeLoc == "pythonw.exe":
+        ass_pat = os.path.join(".", "assets")
+    elif ExeLoc == "launcher.exe":
+        ass_pat = os.path.join(sys._MEIPASS, "assets")
+    return ass_pat
 
 def launch_mario(sfc_path, window):
     window.destroy()  # Close the launcher window
@@ -211,7 +221,7 @@ def show_options_window():
     options_window.geometry("1420x450")
     options_window.configure(bg=background_color)
     options_window.resizable(False, False)
-    options_window.iconbitmap(os.path.join(assets_path, 'icon.ico'))
+    options_window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
 
     # Read the current options from the INI file
     options = read_ini_options()
@@ -391,7 +401,9 @@ def create_launcher_window():
     window.geometry("890x470")
     window.configure(bg=background_color)
     window.resizable(False, False)
-    window.iconbitmap(os.path.join(assets_path, 'icon.ico'))
+    window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
+    print(sys.executable)
+
 
     # Scan the folder for available SFC files
     sfcs = scan_sfcs_folder()
