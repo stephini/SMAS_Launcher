@@ -626,6 +626,7 @@ def create_launcher_window():
         window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
     elif sysenv == 2:
         #window.iconbitmap(os.path.join(asspat(), 'icon.png'))
+        pass
     elif sysenv == 3:
         window.iconbitmap(os.path.join(asspat(), 'icon.icns'))
 
