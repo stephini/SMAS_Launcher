@@ -1,9 +1,10 @@
 import os
 import sys
-from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry, Canvas  # Added import statement for Entry widget
+from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry, Canvas, messagebox, Toplevel  # Added import statement for Entry widget
 from PIL import Image, ImageTk
+import win32gui
+import win32con
 import configparser
-import winsound
 import zstandard
 import hashlib
 import shutil
@@ -12,6 +13,12 @@ import zipfile
 import subprocess
 import pygame
 import threading
+import inspect
+import time
+import glob
+import simpleaudio as sa
+from dulwich.repo import Repo
+
 
 # Assets folder stuff
 current_dir = "."
@@ -25,52 +32,91 @@ FRAME_HEIGHT = 232
 SCALE_FACTOR = 3
 FRAME_DURATION = 10  # milliseconds
 
-# Path to the folder containing sfc files and PNG images
-appdata_path = os.getenv('APPDATA')
+# System Environment related stuff
+if sys.platform.startswith('win'):
+    # Windows-specific code
+    sysenv = 1
+    appdata_path = os.getenv('APPDATA')
+elif sys.platform.startswith('linux'):
+    # Linux-specific code
+    sysenv = 2
+    appdata_path = os.path.join(os.path.expanduser("~"), ".local", "share")
+elif sys.platform.startswith('darwin'):
+    # macOS-specific code
+    sysenv = 3
+    app_support_path = os.path.join(os.path.expanduser("~"), "Library", "Application Support")
+else:
+    # Code for other operating systems
+    err_handler("Running on an unrecognized operating system")
+
 script_name = "SMAS Launcher"
 install_dir = os.path.join(appdata_path, script_name)
 sfc_dir = os.path.join( install_dir, "sfcs")
 image_dir = os.path.join(install_dir, "pngs")
 launcher_dir = os.path.join(install_dir, "launcher")
+smw_dir = os.path.join(install_dir, "source", "smw")
+smasl_dir = os.path.join(install_dir, "source", "smasl")
+
+# Path to the folder containing sfc files and PNG images
 smw_path = "smw"  # Update with the actual path
 ini_path = "smw.ini"  # Update with the actual path to your INI file
 background_color = "#4271B7"
 bgm_location = "smas.wav"
-smw_dir = os.path.join(install_dir, "source", "smw")
-smasl_dir = os.path.join(install_dir, "source", "smasl")
-git_dir = os.path.join(install_dir, "source", "git-portable")
 
 # Is code being ran as EXE or PYW
 ExeLoc = os.path.basename(sys.executable).lower()
 
-def asspat():
-    if ExeLoc == "pythonw.exe":
-        ass_pat = os.path.join(".", "assets")
-    elif ExeLoc == "launcher.exe":
-        ass_pat = os.path.join(sys._MEIPASS, "assets")
+pygame.mixer.init()
+
+def asspat(): #assets path since i keep asking "Wtf is asspat?" only to remember this comment is so I stop asking myself that. :P 
+    if ExeLoc == "launcher.exe":
+        ass_pat = os.path.join(sys._MEIPASS, "assets")#asspat windows
+    elif ExeLoc in ("launcher.app", "launcher"):
+        ass_pat = os.path.join(sys._MEIPASSBASE, "assets")#asspat mac+linux
+    else:
+        ass_pat = os.path.join(".", "assets")#asspat script
     return ass_pat
 
-def launch_mario(sfc_path, window):
+def err_handler(message): 
+    dialog = Tk()
+    dialog.title("Error")
+    dialog.geometry("300x300")
+
+    label = Label(dialog, text=message, wraplength=250)
+    label.pack(pady=10)
+
+    button = Button(dialog, text="Copy", command=lambda: dialog.clipboard_append(message))
+    button.pack()
+
+    dialog.mainloop()
+    sys.exit(1)
+
+def launch_mario(sfc_path, window): 
     try:
         window.destroy()  # Close the launcher window
 
         # Construct the command
         mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
-
+        # Create subprocess startup information
         # Run the command
-        subprocess.run(mario_command, cwd=install_dir)
+
+        sfx_sound = pygame.mixer.Sound(os.path.join(launcher_dir,"pg.wav"))
+        sfx_channel = sfx_sound.play()
+        while sfx_channel.get_busy():
+            pygame.time.Clock().tick(10)
+        pygame.mixer.quit()
+        subprocess.Popen(mario_command, shell=False)
+        time.sleep(.5)
+        window_handle = win32gui.FindWindow(None, os.path.join(install_dir, f"{smw_path}.exe"))
+        if window_handle != 0:
+            win32gui.ShowWindow(window_handle, win32con.SW_HIDE)
 
     except FileNotFoundError as e:
-        error_message = f"Error: File not found\n\nFunction: launch_mario\nFile: {e.filename}"
-        messagebox.showerror("File Not Found", error_message)
-
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
     except PermissionError as e:
-        error_message = f"Error: Permission denied\n\nFunction: launch_mario\nFile: {e.filename}"
-        messagebox.showerror("Permission Denied", error_message)
-
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
     except Exception as e:
-        error_message = f"An error occurred\n\nFunction: launch_mario\n\n{type(e).__name__}: {str(e)}"
-        messagebox.showerror("Error", error_message)
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
 def scan_sfcs_folder():
     sfcs = []
@@ -78,18 +124,36 @@ def scan_sfcs_folder():
         if file.lower().endswith(".sfc"):
             sfcs.append(file)
     if not sfcs:
-        error_message = f"No SFC files found."
-        messagebox.showerror("Error", error_message)
-    return sfcs
+        err_handler(f"No SFC files found.")
+    else:
+        return sfcs
 
-def create_button(sfc, image, row, column, window):
-    button = Button(window, image=image, command=lambda: launch_mario(os.path.join(sfc_dir, sfc), window))
+def create_button(sfc, image, row, column, window ):
+    desired_size = (294, 440)
+    shadow_image = Image.open(os.path.join(install_dir,"launcher","ds.png")).convert("RGBA")
+    #shadow_image = Image.new("RGBA", desired_size, (0,0,0,0))
+    background = Image.new("RGBA", desired_size, (0,0,0,0))
+    shadow_composite = Image.alpha_composite(background, shadow_image)
+    shadow_photo = ImageTk.PhotoImage(shadow_composite)
+    
+    shadow = Label(window, image=shadow_photo,  relief="flat", borderwidth=0)
+    shadow.image=shadow_photo
+    shadow.grid(row=row, column=column, padx=10, pady=10)
+    shadow.config(width=294, height=440)
+
+    button = Button(window, image=image, command=lambda: launch_mario(os.path.join(sfc_dir, sfc), window), relief="flat", borderwidth=0)
     button.image = image
-    button.grid(row=row, column=column, padx=10, pady=10)  # Set padding between buttons
+    button.grid(row=row, column=column, padx=30, pady=25)  # Set padding between buttons
     button.config(width=267, height=400)  # Set the desired width and height of the buttons
 
+def get_enclosing_function_name():
+    stack = inspect.stack()
+    frame = stack[1][0]
+    info = inspect.getframeinfo(frame)
+    function_name = info.function
+    return function_name
 
-def create_buttons(sfcs, window):
+def create_buttons(sfcs, window ):
     priority_sfcs = ["smb1.sfc", "smbll.sfc", "smw.sfc"]
 
     # Custom sorting function
@@ -106,17 +170,33 @@ def create_buttons(sfcs, window):
     for index, sfc in enumerate(sorted_sfcs):
         image_path = os.path.join(image_dir, sfc.replace(".sfc", ".png"))
         if os.path.exists(image_path):
-            image = ImageTk.PhotoImage(Image.open(image_path))
+            try:
+                image = ImageTk.PhotoImage(Image.open(image_path))
+            except FileNotFoundError as e:
+                err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+            except PermissionError as e:
+                err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+            except Exception as e:
+                err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
         else:
             default_image_path = os.path.join(launcher_dir, "mario.png")
             image = ImageTk.PhotoImage(Image.open(default_image_path))
         row = index // num_columns
         column = index % num_columns
-        create_button(sfc, image, row, column, window)
+        create_button(sfc, image, row, column, window )
 
 def read_ini_options():
     config = configparser.ConfigParser()
-    config.read(os.path.join(install_dir, ini_path))
+
+    try:
+        config.read(os.path.join(install_dir, ini_path))
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+
 
     options = {}
 
@@ -229,9 +309,15 @@ def write_ini_options(options):
     # Write options to the [GamepadMap] section
     gamepad_options = config["GamepadMap"]
     gamepad_options["Controls"] = options["GamepadControls"]
-
-    with open(os.path.join(install_dir, ini_path), "w") as config_file:
-        config.write(config_file)
+    try:
+        with open(os.path.join(install_dir, ini_path), "w") as config_file:
+            config.write(config_file)
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
 def show_options_window():
     options_window = Tk()
@@ -239,7 +325,12 @@ def show_options_window():
     options_window.geometry("1420x450")
     options_window.configure(bg=background_color)
     options_window.resizable(False, False)
-    options_window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
+    if sysenv == 1:
+        window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
+    elif sysenv == 2:
+        window.iconbitmap(os.path.join(asspat(), 'icon.png'))
+    elif sysenv == 3:
+        window.iconbitmap(os.path.join(asspat(), 'icon.icns'))
 
     # Read the current options from the INI file
     options = read_ini_options()
@@ -290,10 +381,17 @@ def extract_smas():
     SHA1_HASH_SMB1 = '4a5278150f3395419d68cb02a42f7c3c62cdf8b4'
     SHA1_HASH_SMBLL = '493e14812af7a92d0eacf00ba8bb6d3a266302ca'
 
-    smas = open(os.path.join(install_dir, 'smas.sfc'), 'rb').read()
+    try:
+        smas = open(os.path.join(install_dir, 'smas.sfc'), 'rb').read()
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     hash = hashlib.sha1(smas).hexdigest()
     if hash != SHA1_HASH:
-      raise Exception('You need SMAS with sha1 ' + SHA1_HASH + ' yours is ' + hash)
+      err_handler('You need SMAS with sha1 ' + SHA1_HASH + ' yours is ' + hash)
 
     dict_data = zstandard.ZstdCompressionDict(smas)
 
@@ -302,10 +400,17 @@ def extract_smas():
 
     hash = hashlib.sha1(out).hexdigest()
     if hash != SHA1_HASH_SMB1:
-      raise Exception('Error. SMB1 hash is supposed to be ' + SHA1_HASH_SMB1 + ' yours is ' + hash)
+      err_handler('Error. SMB1 hash is supposed to be ' + SHA1_HASH_SMB1 + ' yours is ' + hash)
 
-    with open(os.path.join(install_dir, 'smb1.sfc'), 'wb') as ofp:
-        ofp.write(out)
+    try:
+        with open(os.path.join(install_dir, 'smb1.sfc'), 'wb') as ofp:
+            ofp.write(out)
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
 
     cctx = zstandard.ZstdDecompressor(dict_data=dict_data)
@@ -313,21 +418,22 @@ def extract_smas():
 
     hash = hashlib.sha1(out).hexdigest()
     if hash != SHA1_HASH_SMBLL:
-      raise Exception('Error. SMBLL hash is supposed to be ' + SHA1_HASH_SMBLL + ' yours is ' + hash)
+      err_handler('Error. SMBLL hash is supposed to be ' + SHA1_HASH_SMBLL + ' yours is ' + hash)
 
-    with open(os.path.join(install_dir, 'smbll.sfc'), 'wb') as ofp:
-        ofp.write(out)
-
+    try:
+        with open(os.path.join(install_dir, 'smbll.sfc'), 'wb') as ofp:
+            ofp.write(out)
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     
 def git_clone(repo_url, destination_path, branch=None):
-    # Run Git command using Git Portable
-    git_executable = os.path.join(git_dir, "cmd", "git.exe")
-    command = [git_executable, "clone"]
-    if branch is not None:
-        command += ["--branch", branch]
-    command += [repo_url, destination_path]
-    
-    subprocess.run(command)
+    repo = Repo.clone(repo_url, destination_path)
+    if branch != None:
+        repo.refs.set_symbolic_ref('HEAD', f'refs/heads/{branch}')
 
 def filefextract(url):
     filename = url.split("/")[-1]
@@ -338,103 +444,201 @@ def filefextract(url):
     response.raise_for_status()
 
     # Save the file
-    with open(filename, "wb") as file:
-        file.write(response.content)
+    try:
+        with open(filename, "wb") as file:
+            file.write(response.content)
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name}\n\n{typee.__name__}: {stre}")
+
 
     # Extract the file to the destination directory
-    with zipfile.ZipFile(filename, "r") as zip_ref:
-        zip_ref.extractall(destination_dir)
+    try:
+        with zipfile.ZipFile(filename, "r") as zip_ref:
+            zip_ref.extractall(destination_dir)
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
     # Delete the downloaded zip file
-    os.remove(filename)
+    try:
+        os.remove(filename)
+    except FileNotFoundError as e:
+        err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     
 def build_with_tcc():
-    batch_code = '''
-@echo off
-set SDL2=third_party\SDL2-2.26.5
-third_party\\tcc\\tcc.exe -osmw.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -I%SDL2%/include -L%SDL2%/lib/x64 -lSDL2 -I. src/*.c src/snes/*.c third_party/gl_core/gl_core_3_1.c smb1/*.c smbll/*.c
-copy %SDL2%\\lib\\x64\\SDL2.dll .
-'''
-
-    temp_file_dir = os.path.join(smw_dir)
-    temp_file_path= os.path.join(temp_file_dir, "run_with_tcc_temp.bat")
-    with open(temp_file_path, 'w') as file:
-        file.write(batch_code)
-    if os.path.exists(temp_file_dir):
-        completed_process = subprocess.run(["cmd", "/c", "run_with_tcc_temp.bat"], cwd=temp_file_dir, capture_output=True, text=True)
-    os.remove(temp_file_path)
+    cwd = os.path.join(install_dir, "source", "smw")
+    exe = os.path.join(cwd, "third_party/tcc/tcc")
+    files = (
+        glob.glob("src/*.c", recursive=False) +
+        glob.glob("src/snes/*.c", recursive=False) +
+        glob.glob("smb1/*.c", recursive=False) +
+        glob.glob("smbll/*.c", recursive=False)
+    )
+    args = ["-osmw.exe", "-DCOMPILER_TCC=1", "-DSTBI_NO_SIMD=1", "-DHAVE_STDINT_H=1", "-D_HAVE_STDINT_H=1", "-DSYSTEM_VOLUME_MIXER_AVAILABLE=0", f"-I{env}/include", f"-L{env}/lib/x64", "-lSDL2", "-I."]
+    if sysenv == 2 or sysenv == 3:
+        args[0] = "-osmw"
+        del args[6]
+        del args[6]
+    cmd = [exe, *args, *files]
+    process = subprocess.Popen(cmd, cwd=cwd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    stderr, stdout = process.communicate()
+    if sysenv == 1:
+        shutil.copy2(os.path.join(env, "lib", "x64", "SDL2.dll"), cwd)
 
 def build_game():
-    for file_name in ["smas.sfc", "smw.sfc"]:
-        shutil.move(file_name,os.path.join(install_dir, file_name))
-    git_gud()
+    try:
+        for file_name in ["smas.sfc", "smw.sfc"]:
+            #shutil.move(file_name,os.path.join(install_dir, file_name))
+            shutil.copy2(file_name,os.path.join(install_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir), "smb1")
-    for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
-       shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
+    try:
+        for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
+           shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     extract_smas()
     filefextract("https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip")
     filefextract("https://github.com/libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip")
-    build_with_tcc()
-    for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
-        shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
+    if(sysenv == 1):
+        build_with_tcc()
+        try:
+            for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
+                shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
+        except FileNotFoundError as e:
+            err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+        except PermissionError as e:
+            err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+        except Exception as e:
+                err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    else:
+        subprocess.run(os.path.join(install_dir, "source", "smw", "make"))
+        try:
+            for file_name in ["smw", "smw.ini", "sdl2.dll"]:
+                shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
+        except FileNotFoundError as e:
+            err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+        except PermissionError as e:
+            err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+        except Exception as e:
+                err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    
     git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(install_dir, smasl_dir))
-    for folder_name in ["launcher", "pngs", "sfcs"]:
-        os.makedirs(os.path.join( install_dir, folder_name ), exist_ok=True)
-    for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
-        shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
-    for file_name in ["smb1.png", "smbll.png", "smw.png"]:
-        shutil.copy2(os.path.join( smasl_dir, "pngs", file_name), os.path.join(image_dir, file_name))
-    for file_name in ["smas.wav", "mario.png"]:
-        shutil.copy2(os.path.join( smasl_dir, "launcher", file_name), os.path.join(launcher_dir, file_name))
-    for file_name in ["smbll.zst", "smb1.zst"]:
-        os.remove(os.path.join(install_dir, file_name))
-    for file_name in ["smas.sfc"]:
-        shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
-
-def git_gud():
-    url = "https://github.com/git-for-windows/git/releases/download/v2.41.0.windows.1/MinGit-2.41.0-64-bit.zip"
-
-    filename = url.split("/")[-1]
-    destination_dir = os.path.join(git_dir)
-
-    # Download the file
-    response = requests.get(url)
-    response.raise_for_status()
-
-    # Save the file
-    with open(filename, "wb") as file:
-        file.write(response.content)
-
-    # Extract the file to the destination directory
-    with zipfile.ZipFile(filename, "r") as zip_ref:
-        zip_ref.extractall(destination_dir)
-
-    # Delete the downloaded zip file
-    os.remove(filename)
+    try:
+        for folder_name in ["launcher", "pngs", "sfcs"]:
+            os.makedirs(os.path.join( install_dir, folder_name ), exist_ok=True)
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+            err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    try:
+        for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
+            shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+            err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    try:
+        for file_name in ["smb1.png", "smbll.png", "smw.png"]:
+            shutil.copy2(os.path.join( smasl_dir, "pngs", file_name), os.path.join(image_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+            err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    try:
+        for file_name in ["smas.wav", "mario.png"]:
+            shutil.copy2(os.path.join( smasl_dir, "launcher", file_name), os.path.join(launcher_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+            err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    try:
+        for file_name in ["smbll.zst", "smb1.zst"]:
+            os.remove(os.path.join(install_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+            err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+    try:
+        for file_name in ["smas.sfc"]:
+            shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+            err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
 def create_launcher_window():
     # Create the launcher window
     window = Tk()
-    window.title("Super Mario Launcher")
-    window.geometry("890x470")
+    window.title(script_name)
+    window.geometry("987x525")
     window.configure(bg=background_color)
     window.resizable(False, False)
-    window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
-    print(sys.executable)
+    if sysenv == 1:
+        window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
+    elif sysenv == 2:
+        window.iconbitmap(os.path.join(asspat(), 'icon.png'))
+    elif sysenv == 3:
+        window.iconbitmap(os.path.join(asspat(), 'icon.icns'))
+
+    audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
+    try:
+        pygame.mixer.music.load(audio_file_path)
+        pygame.mixer.music.play(-1)  # -1 indicates infinite loop
+    except pygame.error:
+        err_handler("Error: Failed to play audio")
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
 
     # Scan the folder for available SFC files
     sfcs = scan_sfcs_folder()
 
     # Create the buttons for launching each game
-    create_buttons(sfcs, window)
+    create_buttons(sfcs, window )
 
     # Create the options button
     options_button = Button(window, text="Options", command=show_options_window)
     options_button.grid(row=(len(sfcs) + 3) // 4, column=0, columnspan=4, padx=10, pady=10)
 
-    audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
-    winsound.PlaySound(audio_file_path, winsound.SND_LOOP | winsound.SND_ASYNC)
+
+
 
     window.mainloop()
     
@@ -447,7 +651,15 @@ def play_animation(build_finished):
 
     # Load animation frames
     frames = []
-    animation_sheet = pygame.image.load(os.path.join(assets_path, 'downloading.png'))
+    try:
+        animation_sheet = pygame.image.load(os.path.join(assets_path, 'downloading.png'))
+    except FileNotFoundError as e:
+        err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+    except PermissionError as e:
+        err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+    except Exception as e:
+        err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+
     for i in range(7):
         frame = animation_sheet.subsurface(
             pygame.Rect(0, i * FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT)

@@ -1,6 +1,0 @@
-Pillow
-configparser
-gitpython
-requests
-zstandard
-pygame
