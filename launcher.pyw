@@ -2,8 +2,9 @@ import os
 import sys
 from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry, Canvas, messagebox, Toplevel  # Added import statement for Entry widget
 from PIL import Image, ImageTk
-import win32gui
-import win32con
+if sys.platform == 'win32':
+    import win32gui
+    import win32con
 import configparser
 import zstandard
 import hashlib
@@ -16,8 +17,9 @@ import threading
 import inspect
 import time
 import glob
-import simpleaudio as sa
+import dulwich.client as dulwich_client
 from dulwich.repo import Repo
+from dulwich import index
 
 
 # Assets folder stuff
@@ -96,7 +98,10 @@ def launch_mario(sfc_path, window):
         window.destroy()  # Close the launcher window
 
         # Construct the command
-        mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
+        if sysenv == 1:
+            mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
+        else:
+            mario_command = f"{os.path.join(install_dir, smw_path)}"
         # Create subprocess startup information
         # Run the command
 
@@ -107,9 +112,10 @@ def launch_mario(sfc_path, window):
         pygame.mixer.quit()
         subprocess.Popen(mario_command, shell=False)
         time.sleep(.5)
-        window_handle = win32gui.FindWindow(None, os.path.join(install_dir, f"{smw_path}.exe"))
-        if window_handle != 0:
-            win32gui.ShowWindow(window_handle, win32con.SW_HIDE)
+        if sysenv == 1:
+            window_handle = win32gui.FindWindow(None, os.path.join(install_dir, f"{smw_path}.exe"))
+            if window_handle != 0:
+                win32gui.ShowWindow(window_handle, win32con.SW_HIDE)
 
     except FileNotFoundError as e:
         err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
@@ -430,10 +436,20 @@ def extract_smas():
     except Exception as e:
         err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     
-def git_clone(repo_url, destination_path, branch=None):
-    repo = Repo.clone(repo_url, destination_path)
-    if branch != None:
-        repo.refs.set_symbolic_ref('HEAD', f'refs/heads/{branch}')
+def git_clone(src, target, branch="main"):
+    try:
+        #shutil.rmtree(target)
+        print(f"making dir {target}")
+        os.makedirs(target)
+    except Exception as e:
+        err_handler(e)
+    client, path = dulwich_client.get_transport_and_path(src)
+    r = Repo.init(target)
+
+    remote_refs= client.fetch(path, r)
+    r[b"HEAD"] = remote_refs[f"refs/heads/{branch}".encode()]
+
+    index.build_index_from_tree(r.path, r.index_path(), r.object_store, r[b'HEAD'].tree)
 
 def filefextract(url):
     filename = url.split("/")[-1]
@@ -532,9 +548,9 @@ def build_game():
         except Exception as e:
                 err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
     else:
-        subprocess.run(os.path.join(install_dir, "source", "smw", "make"))
+        subprocess.run("make",cwd = os.path.join(install_dir, "source", "smw"))
         try:
-            for file_name in ["smw", "smw.ini", "sdl2.dll"]:
+            for file_name in ["smw", "smw.ini"]:
                 shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
         except FileNotFoundError as e:
             err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
@@ -609,7 +625,7 @@ def create_launcher_window():
     if sysenv == 1:
         window.iconbitmap(os.path.join(asspat(), 'icon.ico'))
     elif sysenv == 2:
-        window.iconbitmap(os.path.join(asspat(), 'icon.png'))
+        #window.iconbitmap(os.path.join(asspat(), 'icon.png'))
     elif sysenv == 3:
         window.iconbitmap(os.path.join(asspat(), 'icon.icns'))
 
