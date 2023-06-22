@@ -13,6 +13,8 @@ Before using this launcher, make sure you have the following installed:
 
 ## Option 1: Using the Executable (Simpler and Cleaner)
 
+Executable versions for Mac and Linux will be forthcoming.
+
 1. Go to the "Releases" section of the repository.
 2. Download the latest release.
 3. Create a new folder and place the downloaded executable in it.
@@ -22,10 +24,13 @@ Before using this launcher, make sure you have the following installed:
 
 ## Option 2: Using Python (Recommended for Python users)
 
+Python has tentative support for Mac and Linux.
+
 1. Download the source code from the repository.
 2. Create a new folder and place the downloaded source code in it.
 3. Copy the Super Mario All-Stars ROM (smas.sfc) and Super Mario World ROM (smw.sfc) into the same folder.
-4. Run the "download dependencies.bat" file to download the required Python packages.
+4. On Windows run the "Install-Dependencies-for-Windows.bat" file to download the required Python packages.
+4. On Mac or Linux run the "Install-Dependencies-for-Mac-and-Linux.sh" file to download the required Python packages.
 5. After downloading the dependencies, run the "launcher.pyw" script.
 6. The launcher will launch the game, and you can start playing.
 

@@ -22,4 +22,5 @@ build/
 # Ignore git batch files
 gitaddfiles.bat
 gitcommit.bat
+gitpull.bat
 gitpush.bat
