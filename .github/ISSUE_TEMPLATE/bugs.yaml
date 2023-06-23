@@ -47,7 +47,7 @@ body:
     id: os-distro
     attributes:
       label: If Linux - Specify Distro And Debian Landmark
-      placeholder: "Example: Arch/Buster/"
+      placeholder: "Example: Arch/Buster/Bookworm/Rex/etc"
     validations:
       required: false
   - type: textarea
