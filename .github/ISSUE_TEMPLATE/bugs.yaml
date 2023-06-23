@@ -41,6 +41,14 @@ body:
       options:
       - Windows 11
       - Windows 10 (64bit)
+      - Linux
+  - type: input
+    id: os-distro
+    attributes:
+      label: If Linux - Specify Distro
+      placeholder: "Example: Arch"
+    validations:
+      required: true
     validations:
       required: true
   - type: textarea
