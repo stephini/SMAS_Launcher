@@ -46,17 +46,10 @@ body:
   - type: input
     id: os-distro
     attributes:
-      label: If Linux - Specify Distro
-      placeholder: "Example: Arch"
+      label: If Linux - Specify Distro And Debian Landmark
+      placeholder: "Example: Arch/Buster/"
     validations:
       required: false
-   - type: input
-     id: debian
-     attributes:
-       label: If Linux - Specify Distro
-       placeholder: "Example: Buster/Bookworm/Rex/etc"
-    validations:
-       required: false
   - type: textarea
     id: logsDumps
     attributes:
