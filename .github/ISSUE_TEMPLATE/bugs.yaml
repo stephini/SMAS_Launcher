@@ -50,6 +50,13 @@ body:
       placeholder: "Example: Arch"
     validations:
       required: false
+   - type: input
+     id: debian-landmark
+     attributes:
+       label: "If you are using a debian distro specify which landmark you are using."
+       placeholder: "Example: Buster/Bookworm/Rex/etc"
+    validations:
+       required: false
   - type: textarea
     id: logsDumps
     attributes:
