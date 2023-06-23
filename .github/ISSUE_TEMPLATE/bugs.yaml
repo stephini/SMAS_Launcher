@@ -53,7 +53,7 @@ body:
    - type: input
      id: debian
      attributes:
-       label: If you are using a debian distro specify which landmark you are using
+       label: If Linux - Specify Distro
        placeholder: "Example: Buster/Bookworm/Rex/etc"
     validations:
        required: false
