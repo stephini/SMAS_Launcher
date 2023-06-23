@@ -41,8 +41,15 @@ body:
       options:
       - Windows 11
       - Windows 10 (64bit)
+      - Windows 10 (32bit)
+      - Linux
+  - type: input
+    id: os-distro
+    attributes:
+      label: If Linux - Specify Distro And Debian Landmark
+      placeholder: "Example: Arch/Buster"
     validations:
-      required: true
+      required: false
   - type: textarea
     id: logsDumps
     attributes:
