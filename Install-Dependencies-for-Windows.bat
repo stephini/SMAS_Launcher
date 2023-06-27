@@ -1,4 +1,4 @@
 @echo off
-pip install -r requirements.txt
+pip install -r win.requirements.txt
 echo "Finished press any key to continue."
 pause

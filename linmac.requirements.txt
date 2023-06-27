@@ -1,0 +1,6 @@
+dulwich==0.21.5
+Pillow==9.5.0
+pygame==2.4.0
+pyperclip==1.8.2
+Requests==2.31.0
+zstandard==0.21.0

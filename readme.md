@@ -31,8 +31,8 @@ Python has tentative support for Mac and Linux.
 3. Copy the Super Mario All-Stars ROM (smas.sfc) and Super Mario World ROM (smw.sfc) into the same folder.
 4. On Windows run the "Install-Dependencies-for-Windows.bat" file to download the required Python packages.
 4. On Mac or Linux run the "Install-Dependencies-for-Mac-and-Linux.sh" file to download the required Python packages.
-5. After downloading the dependencies, run the "launcher.pyw" script.
-6. The launcher will launch the game, and you can start playing.
+5. After downloading the dependencies, run the "launcher.pyw" script on windows or "Run on Mac and Linux.sh" on Mac and Linux.
+6. The launcher will install the needed backend and then launch the game, and you can start playing.
 
 ## Troubleshooting
 

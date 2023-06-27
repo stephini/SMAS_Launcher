@@ -8,7 +8,6 @@
 builder/
 
 # Ignore pyinstaller files
-make exe.bat
 dist/
 build/
 *.spec
@@ -24,3 +23,5 @@ gitaddfiles.bat
 gitcommit.bat
 gitpull.bat
 gitpush.bat
+gitcommitammend.bat
+gitpushforce.bat
