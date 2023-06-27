@@ -1401,7 +1401,7 @@ def build_game():
 	if not os.path.exists(os.path.join(install_dir, "source", "smasl", "launcher", "snes.png")) and not os.path.exists(os.path.join(install_dir, "launcher", "snes.png")):
 		git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(install_dir, smasl_dir))
 	if not os.path.exists(os.path.join(install_dir, "source", "glsl-shaders", ".git")):
-		git_clone("https://github.com/snesrev/glsl-shaders.git", os.path.join(install_dir, "source", "glsl-shaders"))
+		git_clone("https://github.com/snesrev/glsl-shaders.git", os.path.join(install_dir, "source", "glsl-shaders"),"master")
 	try:
 		for folder_name in ["launcher", "pngs", "sfcs", os.path.join("launcher", "button"), os.path.join("launcher", "UI")]:
 			if not os.path.exists(os.path.join(install_dir, "folder_name")):
