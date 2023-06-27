@@ -1,7 +1,6 @@
 import os
 import sys
-from tkinter import Tk, Button, Frame, Label, PhotoImage, Entry, Canvas, messagebox, Toplevel  # Added import statement for Entry widget
-from PIL import Image, ImageTk
+from PIL import Image
 if sys.platform == 'win32':
 	import win32gui
 	import win32con
@@ -1344,7 +1343,7 @@ def rename_files():
         print("SMAS file not found.")
 
 def build_game():
-	if not os.path.exists(os.path.join(install_dir, "smw.sfc")) and not os.path.exists(os.path.join(install_dir,"sfcs", "smw.sfc")) and not os.path.exists("smw.sfc")
+	if not os.path.exists(os.path.join(install_dir, "smw.sfc")) and not os.path.exists(os.path.join(install_dir,"sfcs", "smw.sfc")) and not os.path.exists("smw.sfc"):
 		rename_files()
 	if not os.path.exists(install_dir):
 		os.makedirs(install_dir)
@@ -1376,7 +1375,7 @@ def build_game():
 		filefextract("https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip")
 	if not os.path.exists(os.path.join(install_dir, "source", "smw", "third_party", "SDL2-2.26.5", "lib", "x64", "SDL2.dll")):
 		filefextract("https://github.com/libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip")
-	if not os.path.exists(os.path.join(install_dir, "smw.exe")) and os.path.exists(os.path.join(install_dir, "smw")):
+	if not os.path.exists(os.path.join(install_dir, "smw.exe")) and not os.path.exists(os.path.join(install_dir, "smw")):
 		if(sysenv == 1):
 			build_with_tcc()
 			try:
@@ -1402,7 +1401,7 @@ def build_game():
 	if not os.path.exists(os.path.join(install_dir, "source", "smasl", "launcher", "snes.png")) and not os.path.exists(os.path.join(install_dir, "launcher", "snes.png")):
 		git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(install_dir, smasl_dir))
 	if not os.path.exists(os.path.join(install_dir, "source", "glsl-shaders", ".git")):
-		git_clone("https://github.com/snesrev/glsl-shaders.git", os.path.join(install_dir, source, "glsl-shaders"))
+		git_clone("https://github.com/snesrev/glsl-shaders.git", os.path.join(install_dir, "source", "glsl-shaders"))
 	try:
 		for folder_name in ["launcher", "pngs", "sfcs", os.path.join("launcher", "button"), os.path.join("launcher", "UI")]:
 			if not os.path.exists(os.path.join(install_dir, "folder_name")):
