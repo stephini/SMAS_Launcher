@@ -1,6 +1,9 @@
 dulwich==0.21.5
-Pillow==9.5.0
+Pillow==10.0.0
 pygame==2.4.0
+pygame_ce==2.3.0
+pygame_gui==0.6.9
+PyOpenGL==3.1.7
 pyperclip==1.8.2
 Requests==2.31.0
 zstandard==0.21.0

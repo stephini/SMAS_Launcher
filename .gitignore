@@ -4,8 +4,14 @@
 # Ignore SFC files
 *.sfc
 
+# Ignore image projects
+*.xcf
+
 # Ignore the test files
 builder/
+
+# Ignore Other dev crap
+requirments.txt
 
 # Ignore pyinstaller files
 dist/

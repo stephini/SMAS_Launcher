@@ -21,15 +21,22 @@ import threading
 import inspect
 import time
 import glob
-import dulwich.client as dulwich_client
-from dulwich.repo import Repo
-from dulwich import index
 import pyperclip
 import json
 import math
+import pygame_gui
+import dulwich.client as dulwich_client
+from dulwich.repo import Repo
+from dulwich.objects import Commit
+from dulwich import porcelain, index
+from dulwich.index import build_index_from_tree
+from pygame.locals import *
+from OpenGL.GL import *
+from OpenGL.GL.shaders import compileShader, compileProgram
 
 
 
+mute = True
 # Assets folder stuff
 current_dir = "."
 assets_path = os.path.join(current_dir, 'assets')
@@ -54,7 +61,7 @@ elif sys.platform.startswith('linux'):
 elif sys.platform.startswith('darwin'):
 	# macOS-specific code
 	sysenv = 3
-	app_support_path = os.path.join(os.path.expanduser("~"), "Library", "Application Support")
+	appdata_path = os.path.join(os.path.expanduser("~"), "Library", "Application Support")
 else:
 	# Code for other operating systems
 	err_handler("Running on an unrecognized operating system")
@@ -68,6 +75,7 @@ image_dir = os.path.join(install_dir, "pngs")
 launcher_dir = os.path.join(install_dir, "launcher")
 smw_dir = os.path.join(install_dir, "source", "smw")
 smasl_dir = os.path.join(install_dir, "source", "smasl")
+glsl_dir = os.path.join(install_dir, "source", "glsl-shaders")
 smw_path = "smw"
 ini_path = "smw.ini"
 bgm_location = "smas.wav"
@@ -82,7 +90,7 @@ Loptions ={
 	"onload":1 #1 = close, 2 = pause
 }
 try:
-	with open(os.path.join(install_dir, "launcher", "launcher.json"), "r") as file:
+	with open(os.path.join(launcher_dir, "launcher.json"), "r") as file:
 		data = json.load(file)
 		Loptions = data
 except FileNotFoundError:
@@ -121,6 +129,8 @@ def asspat(): #assets path since i keep asking "Wtf is asspat?" only to remember
 def err_handler(message):
 	WIDTH = 300
 	HEIGHT = 300
+	pygame.quit()
+	pygame.init()
 	err_window = pygame.display.set_mode((WIDTH, HEIGHT))
 	pygame.display.set_caption("Error")
 	font = pygame.font.Font(None, 20)
@@ -205,7 +215,7 @@ def create_button(sfc, image, row, col, main_window ):
 	boxsize = (267, 400)
 	shadsize = (294, 440)
 	arrowsize = (104, 53)
-	arrowimage= pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","pointer.png")).convert_alpha(), arrowsize)
+	arrowimage= pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"pointer.png")).convert_alpha(), arrowsize)
 	boxcol = {1:30,2:357,3:684}
 	shadcol = {1:16,2:343,3:670}
 	arrowcol = {1:111,2:438,3:765}
@@ -215,7 +225,7 @@ def create_button(sfc, image, row, col, main_window ):
 	boxw,boxh = boxsize
 	if Loptions["selector"] == 1:
 		boximage = pygame.transform.scale(pygame.image.load(image).convert_alpha(), boxsize)
-		shadimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","ds.png")).convert_alpha(), shadsize)
+		shadimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"ds.png")).convert_alpha(), shadsize)
 		main_window.blit(shadimage, (shadcol[col],shadrow))
 		main_window.blit(boximage, (boxcol[col],boxrow))
 	boxrect =  pygame.Rect(boxcol[col], boxrow, boxw, boxh)
@@ -227,7 +237,7 @@ def create_button(sfc, image, row, col, main_window ):
 			boxsize = (294, 440)
 			shadsize = (309, 462)
 			boximage = pygame.transform.scale(pygame.image.load(image).convert_alpha(), boxsize)
-			shadimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","ds.png")).convert_alpha(), shadsize)
+			shadimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"ds.png")).convert_alpha(), shadsize)
 			main_window.blit(shadimage, (shadcol[col],shadrow-50))
 			main_window.blit(boximage, (boxcol[col]-15,boxrow-50))
 		for event in pygame.event.get():
@@ -235,7 +245,7 @@ def create_button(sfc, image, row, col, main_window ):
 				launch_mario(os.path.join(sfc_dir, sfc), main_window)
 	else:
 		boximage = pygame.transform.scale(pygame.image.load(image).convert_alpha(), boxsize)
-		shadimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","ds.png")).convert_alpha(), shadsize)
+		shadimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"ds.png")).convert_alpha(), shadsize)
 		main_window.blit(shadimage, (shadcol[col],shadrow))
 		main_window.blit(boximage, (boxcol[col],boxrow))
 
@@ -301,7 +311,20 @@ def read_ini_options():
 	options["IgnoreAspectRatio"] = graphics_options.getboolean("IgnoreAspectRatio")
 	options["NoSpriteLimits"] = graphics_options.getboolean("NoSpriteLimits")
 	options["OutputMethod"] = graphics_options.get("OutputMethod")
-	options["LinearFiltering"] = graphics_options.getboolean("LinearFiltering")
+	if sysenv == 1:
+		options["LinearFiltering"] = graphics_options.getboolean("LinearFiltering")
+	elif sysenv ==2:
+		linear_filtering_str = graphics_options.get("LinearFiltering")
+		try:
+			if linear_filtering_str is not None:
+				linear_filtering = bool(int(linear_filtering_str))
+			if linear_filtering_str is True or linear_filtering_str is False:
+				linear_filtering = bool(linear_filtering_str)
+			else:
+				linear_filtering = False
+		except:
+			linear_filtering = False
+		options["LinearFiltering"] = linear_filtering
 	options["Shader"] = graphics_options.get("Shader")
 
 	# Read options from the [Sound] section
@@ -460,7 +483,7 @@ def show_options_window():
 		["Enlarge Window", ((5,477), (222, 41)), (255, 255, 255),3],
 		["Shrink Window", ((5,518), (204, 41)), (255, 255, 255),3]
 	]
-	UIDir = os.path.join(install_dir,"launcher","UI")
+	UIDir = os.path.join(launcher_dir,"UI")
 	GOBG = pygame.image.load(os.path.join(launcher_dir,"GOBG.png" )).convert_alpha()
 	SNES = pygame.image.load(os.path.join(launcher_dir,"snes.png" )).convert_alpha()
 	xbox = load_tiles_from_png(os.path.join(launcher_dir,"xboxinputs.png"))
@@ -669,6 +692,11 @@ def show_options_window():
 				for dx, dy in offsets:
 					Goptions_window.blit(outline_surface, TxtRect.move(dx, dy))
 				Goptions_window.blit(TxtSur, TxtRect)
+			
+			shadfile = os.path.join(install_dir, "glsl-shaders", shaderpack, shader)
+			
+			#shader_surface = create_shader_surface(os.path.join(launcher_dir,"GOBG.png" ),shadfile)
+			#Goptions_window.blit(shader_surface(540,150))
 			# -----------------------------------shader stuff end---------------------------
 			pass
 		elif selectedtab == 2:
@@ -843,10 +871,9 @@ def show_options_window():
 		Goptions_window.blit(Cursor,pygame.mouse.get_pos())
 		pygame.display.update()
 		clock.tick(30)
-		
 
 def bindcontroller(Goptions_window):
-	UIDir = os.path.join(install_dir,"launcher","UI")
+	UIDir = os.path.join(launcher_dir,"UI")
 	Panel = pygame.image.load(os.path.join(launcher_dir, "UI", "controllerpanel.png" )).convert_alpha()
 	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
 	initial_x = 266
@@ -917,35 +944,35 @@ def bindcontroller(Goptions_window):
 		pygame.display.update()
 
 def calculate_slider_position(start_range, end_range, selected_item):
-    num_options = end_range - start_range + 1
-    step_size = 255 // (num_options - 1) if num_options > 1 else 0
+	num_options = end_range - start_range + 1
+	step_size = 255 // (num_options - 1) if num_options > 1 else 0
 
-    if num_options == 1:
-        return 0
+	if num_options == 1:
+		return 0
 
-    for index in range(start_range, end_range + 1):
-        if index == selected_item:
-            return (index - start_range) * step_size
-        elif index == end_range:
-            return 255
+	for index in range(start_range, end_range + 1):
+		if index == selected_item:
+			return (index - start_range) * step_size
+		elif index == end_range:
+			return 255
 
 def load_tiles_from_png(filename):
-    tiles = []
-    image = pygame.image.load(filename).convert_alpha()
+	tiles = []
+	image = pygame.image.load(filename).convert_alpha()
 
-    width, height = image.get_size()
-    for y in range(0, height, 64):
-        for x in range(0, width, 64):
-            rect = pygame.Rect(x, y, 64, 64)
-            tile = pygame.Surface((64, 64), pygame.SRCALPHA)
-            tile.blit(image, (0, 0), rect)
-            tiles.append(tile)
+	width, height = image.get_size()
+	for y in range(0, height, 64):
+		for x in range(0, width, 64):
+			rect = pygame.Rect(x, y, 64, 64)
+			tile = pygame.Surface((64, 64), pygame.SRCALPHA)
+			tile.blit(image, (0, 0), rect)
+			tiles.append(tile)
 
-    return tiles
+	return tiles
 
 def convert_buffer_size(buffer_size):
-    converted_value = 5 - math.log2(buffer_size / 512)
-    return int(converted_value)
+	converted_value = 5 - math.log2(buffer_size / 512)
+	return int(converted_value)
 
 def draw_slider(Goptions_window, sliderart, row):
 	slider = [0,37,53,308,329]
@@ -956,22 +983,22 @@ def draw_slider(Goptions_window, sliderart, row):
 	Goptions_window.blit(sliderart[4],  (50+slider[4],67+41*row))
 
 def parse_directory(DIR):
-    folders = ["None"]
-    for item in os.listdir(DIR):
-        item_path = os.path.join(DIR, item)
-        if os.path.isdir(item_path):
-            folders.append(item)
-    return folders
+	folders = ["None"]
+	for item in os.listdir(DIR):
+		item_path = os.path.join(DIR, item)
+		if os.path.isdir(item_path):
+			folders.append(item)
+	return folders
 	
 def parse_glsl_files(DIR):
-    shaders = []
-    for root, dirs, files in os.walk(DIR):
-        for file in files:
-            if file.endswith((".glsl", ".glslp")):
-                file_path = os.path.join(root, file)
-                relative_path = os.path.relpath(file_path, DIR)
-                shaders.append(relative_path)
-    return shaders
+	shaders = []
+	for root, dirs, files in os.walk(DIR):
+		for file in files:
+			if file.endswith((".glsl", ".glslp")):
+				file_path = os.path.join(root, file)
+				relative_path = os.path.relpath(file_path, DIR)
+				shaders.append(relative_path)
+	return shaders
 
 def show_Loptions_window():
 	width = 981
@@ -981,7 +1008,7 @@ def show_Loptions_window():
 	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
 	pygame.display.set_icon(icon)
 	global Loptions
-	UIDir = os.path.join(install_dir,"launcher","UI")
+	UIDir = os.path.join(launcher_dir,"UI")
 	LOBG = pygame.image.load(os.path.join(launcher_dir,"LOBG.png" )).convert_alpha()
 	ArrowL = pygame.image.load(os.path.join(UIDir,"ArrowL.png" )).convert_alpha()
 	ArrowR = pygame.image.load(os.path.join(UIDir,"ArrowR.png" )).convert_alpha()
@@ -1109,7 +1136,7 @@ def show_Loptions_window():
 				button_held = True
 				if QuitRect.collidepoint(mouse_pos):
 					running = False
-					with open(os.path.join(install_dir, "launcher", "launcher.json"), "w") as file:
+					with open(os.path.join(launcher_dir, "launcher.json"), "w") as file:
 						json.dump(Loptions, file)
 				if SelectorRect.collidepoint(mouse_pos):
 					Loptions["selector"] = 2 if Loptions["selector"] == 1 else 1
@@ -1161,24 +1188,18 @@ def show_Loptions_window():
 					Loptions["background_color"][2] += 1
 					Loptions["background_color"] = tuple(Loptions["background_color"])
 					heldtime = 0
-					
-		with open(os.path.join(install_dir, "launcher", "launcher.opt"), "wb") as file:
-			file.write(bytes([Loptions["selector"],
-							 Loptions["bgtype"],
-							 *Loptions["background_color"],
-							 Loptions["onload"]]))
 
 def calculate_sha1(file_path):
-    sha1_hash = hashlib.sha1()
+	sha1_hash = hashlib.sha1()
 
-    with open(file_path, 'rb') as file:
-        # Read the file in chunks to conserve memory
-        chunk = file.read(4096)
-        while chunk:
-            sha1_hash.update(chunk)
-            chunk = file.read(4096)
+	with open(file_path, 'rb') as file:
+		# Read the file in chunks to conserve memory
+		chunk = file.read(4096)
+		while chunk:
+			sha1_hash.update(chunk)
+			chunk = file.read(4096)
 
-    return sha1_hash.hexdigest()
+	return sha1_hash.hexdigest()
 
 def extract_smas():
 	SHA1_HASH = 'c05817c5b7df2fbfe631563e0b37237156a8f6b6' # smas
@@ -1236,8 +1257,6 @@ def extract_smas():
 	
 def git_clone(src, target, branch="main"):
 	try:
-		#shutil.rmtree(target)
-		print(f"making dir {target}")
 		os.makedirs(target)
 	except Exception as e:
 		err_handler(e)
@@ -1291,7 +1310,8 @@ def filefextract(url):
 		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 	
 def build_with_tcc():
-	cwd = os.path.join(install_dir, "source", "smw")
+	cwd = smw_dir
+	env = os.path.join(cwd, "third_party", "SDL2-2.86.5")
 	exe = os.path.join(cwd, "third_party/tcc/tcc")
 	files = (
 		glob.glob("src/*.c", recursive=False) +
@@ -1311,36 +1331,36 @@ def build_with_tcc():
 		shutil.copy2(os.path.join(env, "lib", "x64", "SDL2.dll"), cwd)
 
 def rename_files():
-    target_sha1_smw = '6b47bb75d16514b6a476aa0c73a683a2a4c18765'
-    target_sha1_smas = 'c05817c5b7df2fbfe631563e0b37237156a8f6b6'
+	target_sha1_smw = '6b47bb75d16514b6a476aa0c73a683a2a4c18765'
+	target_sha1_smas = 'c05817c5b7df2fbfe631563e0b37237156a8f6b6'
 
-    smw_found = False
-    smas_found = False
+	smw_found = False
+	smas_found = False
 
-    for file_name in os.listdir():
-        if file_name.endswith(('.sfc', '.smd')):
-            file_path = os.path.join(os.getcwd(), file_name)
-            sha1 = calculate_sha1(file_path)
+	for file_name in os.listdir():
+		if file_name.endswith(('.sfc', '.smd')):
+			file_path = os.path.join(os.getcwd(), file_name)
+			sha1 = calculate_sha1(file_path)
 
-            if sha1 == target_sha1_smw and not smw_found:
-                new_file_name = 'smw.sfc'
-                smw_found = True
-            elif sha1 == target_sha1_smas and not smas_found:
-                new_file_name = 'smas.sfc'
-                smas_found = True
-            else:
-                continue
+			if sha1 == target_sha1_smw and not smw_found:
+				new_file_name = 'smw.sfc'
+				smw_found = True
+			elif sha1 == target_sha1_smas and not smas_found:
+				new_file_name = 'smas.sfc'
+				smas_found = True
+			else:
+				continue
 
-            os.rename(file_path, new_file_name)
-            print(f"Renamed '{file_name}' to '{new_file_name}'")
+			os.rename(file_path, new_file_name)
+			print(f"Renamed '{file_name}' to '{new_file_name}'")
 
-        if smw_found and smas_found:
-            break
+		if smw_found and smas_found:
+			break
 
-    if not smw_found:
-        print("SMW file not found.")
-    if not smas_found:
-        print("SMAS file not found.")
+	if not smw_found:
+		print("SMW file not found.")
+	if not smas_found:
+		print("SMAS file not found.")
 
 def build_game():
 	if not os.path.exists(os.path.join(install_dir, "smw.sfc")) and not os.path.exists(os.path.join(install_dir,"sfcs", "smw.sfc")) and not os.path.exists("smw.sfc"):
@@ -1353,111 +1373,51 @@ def build_game():
 				#shutil.move(file_name,os.path.join(install_dir, file_name))
 				shutil.copy2(file_name,os.path.join(install_dir, file_name))
 		except FileNotFoundError as e:
-			err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+			err_handler(f"File not found.\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
 			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	if not os.path.exists(os.path.join(install_dir, "source", "smw", ".git")):
+	if not os.path.exists(os.path.join(smw_dir, ".git")):
 		git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir), "smb1")
 		try:
 			for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
 			   shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
 		except FileNotFoundError as e:
-			err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+			err_handler(f"File not found.\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
 			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 	if not os.path.exists(os.path.join(install_dir, "smb1.sfc")) and not os.path.exists(os.path.join(install_dir, "sfcs", "smb1.sfc")):
 		extract_smas()
-	if not os.path.exists(os.path.join(install_dir, "source", "smw", "third_party", "tcc", "tcc.exe")):
+	if not os.path.exists(os.path.join(smw_dir, "third_party", "tcc", "tcc.exe")):
 		filefextract("https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip")
-	if not os.path.exists(os.path.join(install_dir, "source", "smw", "third_party", "SDL2-2.26.5", "lib", "x64", "SDL2.dll")):
+	if not os.path.exists(os.path.join(smw_dir, "third_party", "SDL2-2.26.5", "lib", "x64", "SDL2.dll")):
 		filefextract("https://github.com/libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip")
 	if not os.path.exists(os.path.join(install_dir, "smw.exe")) and not os.path.exists(os.path.join(install_dir, "smw")):
-		if(sysenv == 1):
-			build_with_tcc()
-			try:
-				for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
-					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
-			except FileNotFoundError as e:
-				err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-			except PermissionError as e:
-				err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-			except Exception as e:
-					err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-		else:
-			subprocess.run("make",cwd = os.path.join(install_dir, "source", "smw"))
-			try:
-				for file_name in ["smw", "smw.ini"]:
-					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
-			except FileNotFoundError as e:
-				err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-			except PermissionError as e:
-				err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-			except Exception as e:
-					err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	if not os.path.exists(os.path.join(install_dir, "source", "smasl", "launcher", "snes.png")) and not os.path.exists(os.path.join(install_dir, "launcher", "snes.png")):
+		makeSMW()
+	if not os.path.exists(os.path.join(smasl_dir, "launcher", "snes.png")) and not os.path.exists(os.path.join(launcher_dir, "snes.png")):
 		git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(install_dir, smasl_dir))
-	if not os.path.exists(os.path.join(install_dir, "source", "glsl-shaders", ".git")):
-		git_clone("https://github.com/snesrev/glsl-shaders.git", os.path.join(install_dir, "source", "glsl-shaders"),"master")
+	if not os.path.exists(os.path.join(glsl_dir, ".git")):
+		git_clone("https://github.com/snesrev/glsl-shaders.git", glsl_dir,"master")
+	copyGLSL()
 	try:
-		for folder_name in ["launcher", "pngs", "sfcs", os.path.join("launcher", "button"), os.path.join("launcher", "UI")]:
-			if not os.path.exists(os.path.join(install_dir, "folder_name")):
-				os.makedirs(os.path.join( install_dir, folder_name ), exist_ok=True)
+		if not os.path.exists(os.path.join(install_dir, "sfcs")):
+			os.makedirs(os.path.join( install_dir, "sfcs" ), exist_ok=True)
 	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+		err_handler(f"File not found.\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
 			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	copy_smasl()
 	try:
 		for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
 			if not os.path.exists(os.path.join(install_dir, "sfcs", file_name)):
 				shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
 	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	try:
-		for file_name in ["smb1.png", "smbll.png", "smw.png"]:
-			if not os.path.exists(os.path.join(install_dir, "smcs", file_name)):
-				shutil.copy2(os.path.join( smasl_dir, "pngs", file_name), os.path.join(image_dir, file_name))
-	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	try:
-		for file_name in ["smas.wav", "mario.png", "ds.png", "pg.wav", "pointer.png", "ds.png", "GOBG.png", "LOBG.png", "MBG.png", "snes.png", "xboxinputs.png"]:
-			if not os.path.exists(os.path.join(install_dir, "launcher", file_name)):
-				shutil.copy2(os.path.join( smasl_dir, "launcher", file_name), os.path.join(launcher_dir, file_name))
-	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	try:
-		for file_name in ["ButtonHoverLeft.png", "ButtonHoverMiddle.png", "ButtonHoverRight.png", "ButtonNormalLeft.png", "ButtonNormalMiddle.png", "ButtonNormalRight.png", "ButtonPushedLeft.png", "ButtonPushedMiddle.png", "ButtonPushedRight.png"]:
-			if not os.path.exists(os.path.join(install_dir, "launcher", "button", file_name)):
-				shutil.copy2(os.path.join( smasl_dir, "launcher", "button", file_name), os.path.join(launcher_dir, "button", file_name))
-	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	try:
-		for file_name in ["ArrowL.png", "ArrowR.png", "ButtonB.png", "ButtonE.png", "ButtonG.png", "ButtonSB.png", "ButtonSG.png", "ColorBox.png", "controllerpanel.png", "Cursor.png", "Quit.png", "SliderL.png", "SliderM.png", "SliderR.png", "TabSel.png", "TabUnSel.png", "ToggleL.png", "ToggleR.png"]:
-			if not os.path.exists(os.path.join(install_dir, "launcher", "UI", file_name)):
-				shutil.copy2(os.path.join( smasl_dir, "launcher", "UI", file_name), os.path.join(launcher_dir, "UI", file_name))
-	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+		err_handler(f"File not found.\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1467,7 +1427,7 @@ def build_game():
 			if os.path.exists(os.path.join(install_dir, file_name)):
 				os.remove(os.path.join(install_dir, file_name))
 	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+		err_handler(f"File not found.\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1477,12 +1437,493 @@ def build_game():
 			if os.path.exists(os.path.join(install_dir, file_name)):
 				shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
 	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+		err_handler(f"File not found.\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
 			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
+def scan_repo_for_branches(local_path, remote_path):
+	try:
+		repo = Repo(local_path)
+		client, path = dulwich_client.get_transport_and_path(remote_path)
+		branches = []
+
+		remote_refs = client.get_refs(path)
+		for ref in remote_refs.keys():
+			if ref.startswith(b"refs/heads/"):
+				branch = ref.decode().split("/")[-1]
+				branches.append(branch)
+
+		return branches
+	except Exception as e:
+		print(e)
+		quit()
+
+def is_different_branch(repo_path, branch):
+	repo = Repo(repo_path)
+
+	# Get the currently checked out branch
+	# ([b'HEAD', b'refs/heads/smb1'], b'ae5a35b44cd2b5f85e8c38d125ddaffe44b9e30a')
+	# [b'HEAD', b'refs/heads/smb1']
+	current_branch = str(repo.refs.follow(b"HEAD")[0][1]).split("/")[2].strip("'")
+	return current_branch != branch
+
+def is_remote_newer2(repo_path, remote_name='origin'):
+	repo = Repo(repo_path)
+
+	# Get the currently checked out branch
+	refs = repo.get_refs()
+	current_branch_ref = refs[b'REF_HEAD'] if b'REF_HEAD' in refs else None
+
+	if current_branch_ref:
+		# Decode the branch name from the ref
+		current_branch = current_branch_ref.decode()
+
+		# Get the commit objects for the local and remote branches
+		local_commit = repo.get_object(current_branch_ref)
+		remote_commit_ref = refs.get(b'refs/remotes/' + remote_name.encode() + b'/' + current_branch.encode())
+		remote_commit = repo.get_object(remote_commit_ref) if remote_commit_ref else None
+
+		if remote_commit:
+			# Compare the commit timestamps
+			return remote_commit.commit_time > local_commit.commit_time
+
+	return False
+
+def is_remote_newer(repo_path, remote_name='origin'):
+	repo = Repo(repo_path)
+
+	# Get the currently checked out branch
+	current_branch = repo.refs.read_ref(b'REF_HEAD').decode()
+
+	# Get the commit objects for the local and remote branches
+	local_commit = repo.get_object(repo.refs[b'refs/heads/' + current_branch])
+	remote_commit = None
+
+	try:
+		remote_branch_name = f'refs/remotes/{remote_name}/{current_branch}'
+		remote_branch_ref = repo.refs[remote_branch_name]
+		remote_commit = repo.get_object(remote_branch_ref)
+	except KeyError:
+		pass
+
+	if remote_commit:
+		# Compare the commit IDs
+		return remote_commit.id != local_commit.id
+
+	return False
+
+def update_current_branch(repo_path, remote_name='origin'):
+	repo = Repo(repo_path)
+
+	# Get the currently checked out branch
+	current_branch = repo.refs.read_ref(b'REF_HEAD').decode()
+
+	if is_remote_newer(repo_path, remote_name):
+		# Perform the pull operation to update the current branch
+		porcelain.pull(repo_path, remote_name, current_branch)
+
+def update_and_switch_branch(repo_path, branch_name, remote_name='origin'):
+	switch_branch(repo_path, branch_name)
+	porcelain.pull(repo_path, remote_name, branch_name)
+
+def makeSMW():
+	if(sysenv == 1):
+		build_with_tcc()
+		
+		try:
+			if os.path.exists(os.path.exists(install_dir, "smw.exe")):
+				os.remove(os.path.exists(install_dir, "smw.exe"))
+			for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
+				if not os.path.exists(os.path.join(install_dir, file_name)):
+					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
+		except FileNotFoundError as e:
+			err_handler(f"File not found.\nFile: {e.filename}")
+		except PermissionError as e:
+			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+		except Exception as e:
+				err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	else:
+		subprocess.run("make",cwd = smw_dir)
+		
+		try:
+			if os.path.exists(os.path.exists(install_dir, "smw")):
+				os.remove(os.path.exists(install_dir, "smw"))
+			for file_name in ["smw", "smw.ini"]:
+				if not os.path.exists(os.path.join(install_dir, file_name)):
+					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
+		except FileNotFoundError as e:
+			err_handler(f"File not found.\nFile: {e.filename}")
+		except PermissionError as e:
+			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+		except Exception as e:
+				err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+
+def copy_smasl():
+	src_dir = smasl_dir
+	dst_dir = install_dir
+	excluded_files = [
+		"launcher.pyw",
+		".gitignore",
+		"create exe.sh",
+		"gitaddfiles.bat",
+		"gitcommit.bat",
+		"gitcommitammend.bat",
+		"gitpull.bat",
+		"gitpush.bat",
+		"gitpushforce.bat",
+		"install-Dependencies-for-Mac-and-Linux.sh",
+		"Install-Dependencies-for-Windows.bat",
+		"linmac.requirements.txt",
+		"make exe.bat",
+		"readme.md",
+		"Run on Mac and Linux.sh",
+		"spring.png",
+		"tcc",
+		"win.requirements.txt"
+	]
+
+	excluded_dirs = [
+		".git",
+		".github",
+		"assets",
+		"build",
+		"builder",
+		"dist",
+		"playthrough",
+		"saves"
+	]
+
+	for root, dirs, files in os.walk(src_dir):
+		# Exclude specific directories
+		dirs[:] = [d for d in dirs if d not in excluded_dirs]
+
+		for file in files:
+			if file not in excluded_files:
+				src_path = os.path.join(root, file)
+				dst_path = os.path.join(dst_dir, os.path.relpath(src_path, src_dir))
+
+				if not os.path.exists(dst_path):
+					os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+					shutil.copy2(src_path, dst_path)
+					print(f"Copied: {src_path} -> {dst_path}")
+
+def copyGLSL():
+	src_dir = glsl_dir
+	dst_dir = os.path.join(install_dir, "glsl-shaders")
+
+	if not os.path.exists(dst_dir):
+		os.makedirs(dst_dir)
+
+	excluded_dirs = [".git"]
+
+	for root, dirs, files in os.walk(src_dir):
+		# Exclude specific directories
+		dirs[:] = [d for d in dirs if d not in excluded_dirs]
+
+		for file in files:
+			src_path = os.path.join(root, file)
+			dst_path = os.path.join(dst_dir, os.path.relpath(src_path, src_dir))
+
+			if not os.path.exists(dst_path):
+				os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+				shutil.copy2(src_path, dst_path)
+				print(f"Copied: {src_path} -> {dst_path}")
+
+def create_shader_surface(image_path, shader_path):
+	# Initialize Pygame
+	pygame.init()
+	pygame.display.set_mode((420, 240), DOUBLEBUF | OPENGL)
+
+	# Load the PNG image
+	image = pygame.image.load(image_path)
+	image_width, image_height = image.get_rect().size
+
+	# Create a Pygame surface with the same dimensions as the image
+	surface = pygame.Surface((image_width, image_height), flags=pygame.SRCALPHA)
+
+	# Blit the image onto the surface
+	surface.blit(image, (0, 0))
+
+	# Set up OpenGL rendering context
+	glEnable(GL_BLEND)
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+	glViewport(0, 0, 420, 240)
+
+	# Load and compile the shader program
+	shader_program = compileProgram(
+		compileShader(open(shader_path).read(), GL_FRAGMENT_SHADER)
+	)
+
+	# Apply the shader program to the surface
+	glUseProgram(shader_program)
+
+	# Create a rectangle to display the surface with the shader applied
+	shader_surface = pygame.Surface((420, 240), flags=pygame.SRCALPHA)
+	shader_surface.blit(surface, (0, 0))
+
+	return shader_surface
+
+def update_window():
+	width = 981
+	height = 673
+	window_size = (width, height)
+	upgrade_window = pygame.display.set_mode((width, height))
+	pygame.display.set_caption("Upgrade Menu")
+	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
+	pygame.display.set_icon(icon)
+	UIDir = os.path.join(launcher_dir,"UI")
+	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
+	UBG = pygame.image.load(os.path.join(launcher_dir,"UBG.png" )).convert_alpha()
+	ArrowL = pygame.image.load(os.path.join(UIDir,"ArrowL.png" )).convert_alpha()
+	ArrowR = pygame.image.load(os.path.join(UIDir,"ArrowR.png" )).convert_alpha()
+	ButtonE = pygame.image.load(os.path.join(UIDir,"ButtonE.png" )).convert_alpha()
+	ButtonB = pygame.image.load(os.path.join(UIDir,"ButtonB.png" )).convert_alpha()
+	ButtonG = pygame.image.load(os.path.join(UIDir,"ButtonG.png" )).convert_alpha()
+	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
+	QuitBtn = pygame.image.load(os.path.join(UIDir,"Quit.png" )).convert_alpha()
+	SliderL = pygame.image.load(os.path.join(UIDir,"SliderL.png" )).convert_alpha()
+	SliderM = pygame.transform.scale(pygame.image.load(os.path.join(UIDir,"SliderM.png" )).convert_alpha(), (255,32))
+	SliderR = pygame.image.load(os.path.join(UIDir,"SliderR.png" )).convert_alpha()
+	ToggleL = pygame.image.load(os.path.join(UIDir,"ToggleL.png" )).convert_alpha()
+	ToggleR = pygame.image.load(os.path.join(UIDir,"ToggleR.png" )).convert_alpha()
+	ColorBox = pygame.image.load(os.path.join(UIDir,"ColorBox.png" )).convert_alpha()
+	ui_manager = pygame_gui.UIManager(window_size)
+	
+	labels = [
+		["SMW", ((5,50), (113, 41)), (255, 255, 255),10],
+		["SMAS Launcher", ((5,150), (125, 41)), (255, 255, 255),10],
+		["GLSL Shaders", ((5,250), (87, 41)), (255, 255, 255),10],
+	]
+	font = pygame.font.Font(None, 41)
+	LblRects = []
+	for label in labels:
+		TxtRect = pygame.Rect(label[1])
+		LblRects.append(TxtRect)  # Append the TxtRect to the list
+	offsets = [
+		(-1, -1), (-1, 1), (1, -1), (1, 1)
+	]
+
+	SMW_changed = False
+	SMW_updatable = False
+	SMASL_changed = False
+	SMASL_updatable = False
+	GLSL_changed = False
+	GLSL_updatable = False
+
+	SMW_branches = scan_repo_for_branches(smw_dir, "https://github.com/snesrev/smw.git")
+	SMASL_branches = scan_repo_for_branches(smasl_dir, "https://github.com/stephini/SMAS_Launcher.git")
+	GLSL_branches = scan_repo_for_branches(glsl_dir, "https://github.com/snesrev/glsl-shaders.git")
+
+	container_rect = pygame.Rect(0, 0, width, height)
+
+	container = pygame_gui.core.ui_container.UIContainer(container_rect, ui_manager)
+
+	SMW_dropdown_rect = pygame.Rect(50, 100, 200, 30)
+	SMWdropdown = pygame_gui.elements.UIDropDownMenu(
+		options_list=SMW_branches,
+		starting_option=SMW_branches[3],
+		relative_rect=SMW_dropdown_rect,
+		manager=ui_manager,
+		container=container
+	)
+	SMW_button_rect = pygame.Rect(250, 100, 200, 30)
+	SMW_SWbutton = pygame_gui.elements.UIButton(
+		relative_rect=SMW_button_rect,
+		text="Switch Different Branch",
+		manager=ui_manager,
+		container=container,
+		visible=False  # Initially invisible
+	)
+	SMW_Ubutton = pygame_gui.elements.UIButton(
+		relative_rect=SMW_button_rect,
+		text="Upgrade Same Branch",
+		manager=ui_manager,
+		container=container,
+		visible=False  # Initially invisible
+	)
+	SMASL_dropdown_rect = pygame.Rect(50, 200, 200, 30)
+	SMASLdropdown = pygame_gui.elements.UIDropDownMenu(
+		options_list=SMASL_branches,
+		starting_option=SMASL_branches[0],
+		relative_rect=SMASL_dropdown_rect,
+		manager=ui_manager,
+		container=container
+	)
+	SMASL_button_rect = pygame.Rect(250, 200, 200, 30)
+	SMASL_SWbutton = pygame_gui.elements.UIButton(
+		relative_rect=SMASL_button_rect,
+		text="Switch Different Branch",
+		manager=ui_manager,
+		container=container,
+		visible=False  # Initially invisible
+	)
+	SMASL_Ubutton = pygame_gui.elements.UIButton(
+		relative_rect=SMASL_button_rect,
+		text="Upgrade Same Branch",
+		manager=ui_manager,
+		container=container,
+		visible=False  # Initially invisible
+	)
+	GLSL_dropdown_rect = pygame.Rect(50, 300, 200, 30)
+	GLSLdropdown = pygame_gui.elements.UIDropDownMenu(
+		options_list=GLSL_branches,
+		starting_option=GLSL_branches[0],
+		relative_rect=GLSL_dropdown_rect,
+		manager=ui_manager,
+		container=container
+	)
+	GLSL_button_rect = pygame.Rect(250, 300, 200, 30)
+	GLSL_SWbutton = pygame_gui.elements.UIButton(
+		relative_rect=GLSL_button_rect,
+		text="Switch Different Branch",
+		manager=ui_manager,
+		container=container,
+		visible=False  # Initially invisible
+	)
+	GLSL_Ubutton = pygame_gui.elements.UIButton(
+		relative_rect=GLSL_button_rect,
+		text="Upgrade Same Branch",
+		manager=ui_manager,
+		container=container,
+		visible=False  # Initially invisible
+	)
+	if is_different_branch(smw_dir, SMW_branches[3]):
+		SMW_changed = True
+	else:
+		if is_remote_newer(smw_dir, SMW_branches[3]):
+			SMW_updatable = True
+	if is_different_branch(smasl_dir, SMASL_branches[0]):
+		SMASL_changed = True
+	else:
+		if is_remote_newer(smasl_dir, SMASL_branches[0]):
+			SMASL_updatable = True
+	if is_different_branch(glsl_dir, GLSL_branches[0]):
+		GLSL_changed = True
+	else:
+		if is_remote_newer(glsl_dir, GLSL_branches[0]):
+			GLSL_updatable = True
+
+	SMW_selected_branch = None
+	SMASL_selected_branch = None
+	GLSL_selected_branch = None
+
+	QuitRect = pygame.Rect((896,636),(80,32))
+
+	running = True
+	while running:
+		upgrade_window.blit(UBG, (0, 0))
+		time_delta = pygame.time.Clock().tick(60) / 1000.0
+
+		upgrade_window.blit(QuitBtn, (896, 636))
+
+		for idx, label in enumerate(labels):
+			text = label[0]  # Get the text from the data
+			color = label[2]  # Get the color from the data
+			TxtSur = font.render(text, True, color)
+			outline_surface = font.render(text, True, (0, 0, 0))
+			TxtRect = LblRects[idx]  # Retrieve the TxtRect from the list
+			for dx, dy in offsets:
+				upgrade_window.blit(outline_surface, TxtRect.move(dx, dy))
+			upgrade_window.blit(TxtSur, TxtRect)
+
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				sys.exit()
+			elif event.type == pygame.WINDOWMINIMIZED:
+				pygame.mixer.music.pause()
+			elif event.type == pygame.ACTIVEEVENT:
+				if event.gain == 1:  # Window gained focus (unminimized)
+					try:
+						pygame.mixer.music.unpause()
+					except:
+						pass
+			elif event.type == pygame.MOUSEBUTTONDOWN:
+				mouse_pos = pygame.mouse.get_pos()
+				button_held = True
+				if QuitRect.collidepoint(mouse_pos):
+					running = False
+
+			# Process events for the GUI elements
+			ui_manager.process_events(event)
+
+			# Check if the dropdown selection has changed
+			if event.type == pygame.USEREVENT:
+				if event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+					if event.ui_element == SMWdropdown:
+						SMW_updatable = False
+						SMW_changed = False
+						SMW_selected_branch = event.text
+						if not is_different_branch(smw_dir, SMW_selected_branch):
+							if is_remote_newer(smw_dir, SMW_selected_branch):
+								SMW_updatable = True
+						else:
+							SMW_changed = True
+					elif event.ui_element == SMASLdropdown:
+						SMASL_updatable = False
+						SMASL_changed = False
+						SMASL_selected_branch = event.text
+						if not is_different_branch(smasl_dir, SMASL_selected_branch):
+							if is_remote_newer(smasl_dir, SMASL_selected_branch):
+								SMASL_updatable = True
+						else:
+							SMASL_changed = True
+					elif event.ui_element == GLSLdropdown:
+						GLSL_updatable = False
+						GLSL_changed = False
+						GLSL_selected_branch = event.text
+						if not is_different_branch(glsl_dir, GLSL_selected_branch):
+							if is_remote_newer(glsl_dir, GLSL_selected_branch):
+								GLSL_updatable = True
+						else:
+							GLSL_changed = True
+			if event.type == pygame.USEREVENT:
+				if event.type == pygame_gui.UI_BUTTON_PRESSED:
+					if event.ui_element == SMW_SWbutton:
+						update_and_switch_branch(smw_dir, SMW_selected_branch)
+						makeSMW()
+					elif event.ui_element == SMW_Ubutton:
+						update_and_switch_branch(smw_dir)
+						makeSMW()
+					if event.ui_element == SMASL_SWbutton:
+						update_and_switch_branch(smasl_dir, SMASL_selected_branch)
+						copy_smasl()
+					elif event.ui_element == SMASL_Ubutton:
+						update_and_switch_branch(smasl_dir)
+						copy_smasl()
+					if event.ui_element == GLSL_SWbutton:
+						update_and_switch_branch(glsl_dir, GLSL_selected_branch)
+						copyGLSL()
+					elif event.ui_element == GLSL_Ubutton:
+						update_and_switch_branch(glsl_dir)
+						copyGLSL()
+
+		SMW_SWbutton.visible = False
+		SMW_Ubutton.visible = False
+		SMASL_SWbutton.visible = False
+		SMASL_Ubutton.visible = False
+		GLSL_SWbutton.visible = False
+		GLSL_Ubutton.visible = False
+		if SMW_changed:
+			SMW_SWbutton.visible = True
+		if SMW_updatable:
+			SMW_Ubutton.visible = True
+		if SMASL_changed:
+			SMASL_SWbutton.visible = True
+		if SMASL_updatable:
+			SMASL_Ubutton.visible = True
+		if GLSL_changed:
+			GLSL_SWbutton.visible = True
+		if GLSL_updatable:
+			GLSL_Ubutton.visible = True
+
+		ui_manager.update(time_delta)
+		ui_manager.draw_ui(upgrade_window)
+		clock.tick(30)
+		upgrade_window.blit(Cursor,pygame.mouse.get_pos())
+		pygame.display.update()
 
 def create_launcher_window():
 	# Create the launcher window
@@ -1493,21 +1934,21 @@ def create_launcher_window():
 	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
 	pygame.display.set_icon(icon)
 	audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
-	UIDir = os.path.join(install_dir,"launcher","UI")
+	UIDir = os.path.join(launcher_dir,"UI")
 	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
-	try:
-		pygame.mixer.music.load(audio_file_path)
-		pygame.mixer.music.play(-1)  # -1 indicates infinite loop
-		pass
-	except pygame.error:
-		err_handler("Error: Failed to play audio")
-	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-
+	if not mute:
+		try:
+			pygame.mixer.music.load(audio_file_path)
+			pygame.mixer.music.play(-1)  # -1 indicates infinite loop
+			pass
+		except pygame.error:
+			err_handler("Error: Failed to play audio")
+		except FileNotFoundError as e:
+			err_handler(f"File not found.\nFile: {e.filename}")
+		except PermissionError as e:
+			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
+		except Exception as e:
+			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
 	# Scan the folder for available SFC files
 	sfcs = scan_sfcs_folder()
@@ -1515,7 +1956,7 @@ def create_launcher_window():
 	pygame.mouse.set_visible(False)
 
 	while running:
-		
+
 		global myEvents
 		myEvents = pygame.event.get()
 		for event in myEvents:
@@ -1542,20 +1983,21 @@ def create_launcher_window():
 	# Create the options button
 		create_main_window_button(main_window, "Game Options", 100, width//2, 593, show_options_window)#Game Options Button
 		create_main_window_button(main_window, "Launcher Options", 130, width//4*3, 593, show_Loptions_window)#Game Options Button
+		create_main_window_button(main_window, "Update Options", 130, width//4, 593, update_window)#Game Options Button
 		main_window.blit(Cursor,pygame.mouse.get_pos())
 		pygame.display.update()
 
 def create_main_window_button(main_window, Label, GOW, GOX, GOY, func):
 	GOH = 40
-	GONMimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonNormalMiddle.png" )).convert_alpha(), (GOW,GOH))
-	GONLimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonNormalLeft.png" )).convert_alpha(), (GOH,GOH))
-	GONRimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonNormalRight.png" )).convert_alpha(), (GOH,GOH))
-	GOHMimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonHoverMiddle.png" )).convert_alpha(), (GOW,GOH))
-	GOHLimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonHoverLeft.png" )).convert_alpha(), (GOH,GOH))
-	GOHRimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonHoverRight.png" )).convert_alpha(), (GOH,GOH))
-	GOPMimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonPushedMiddle.png" )).convert_alpha(), (GOW,GOH))
-	GOPLimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonPushedLeft.png" )).convert_alpha(), (GOH,GOH))
-	GOPRimage = pygame.transform.scale(pygame.image.load(os.path.join(install_dir,"launcher","button","ButtonPushedRight.png" )).convert_alpha(), (GOH,GOH))
+	GONMimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonNormalMiddle.png" )).convert_alpha(), (GOW,GOH))
+	GONLimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonNormalLeft.png" )).convert_alpha(), (GOH,GOH))
+	GONRimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonNormalRight.png" )).convert_alpha(), (GOH,GOH))
+	GOHMimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonHoverMiddle.png" )).convert_alpha(), (GOW,GOH))
+	GOHLimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonHoverLeft.png" )).convert_alpha(), (GOH,GOH))
+	GOHRimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonHoverRight.png" )).convert_alpha(), (GOH,GOH))
+	GOPMimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonPushedMiddle.png" )).convert_alpha(), (GOW,GOH))
+	GOPLimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonPushedLeft.png" )).convert_alpha(), (GOH,GOH))
+	GOPRimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonPushedRight.png" )).convert_alpha(), (GOH,GOH))
 	GOrect = pygame.Rect((GOX-((GOW//2)+GOH),GOY-(GOH//2)),(GOH+GOW+GOH,GOH))
 	font = pygame.font.Font(None, 30)
 	GOtext = font.render(Label, True, (255,0,255))
@@ -1598,7 +2040,7 @@ def play_animation(build_finished):
 	try:
 		animation_sheet = pygame.image.load(os.path.join(assets_path, 'downloading.png'))
 	except FileNotFoundError as e:
-		err_handler(f"Please place your rom alongside app/scrypt.\nFile: {e.filename}")
+		err_handler(f"File not found.\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1640,7 +2082,7 @@ def play_animation(build_finished):
 		# Check if the build is finished
 		if build_finished.is_set():
 			animation_running = False
-	
+
 def main():
 	pygame.init()
 	build_finished = threading.Event()
