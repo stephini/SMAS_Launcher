@@ -1426,6 +1426,10 @@ def build_game():
 		makeSMW()
 	if not os.path.exists(os.path.join(smasl_dir, "launcher", "snes.png")) and not os.path.exists(os.path.join(launcher_dir, "snes.png")):
 		git_clone("https://github.com/stephini/SMAS_Launcher.git", os.path.join(install_dir, smasl_dir))
+		for file_name in ["smw.ini"]:
+			if not os.path.exists(os.path.join(install_dir, file_name)):
+				shutil.copy2(os.path.join(install_dir, smasl_dir, "launcher", file_name), os.path.join(install_dir, file_name))
+
 	if not os.path.exists(os.path.join(glsl_dir, ".git")):
 		git_clone("https://github.com/snesrev/glsl-shaders.git", glsl_dir,"master")
 	copyGLSL()
@@ -1566,9 +1570,6 @@ def makeSMW():
 			if os.path.exists(os.path.join(install_dir, "smw.exe")):
 				#os.remove(os.path.join(install_dir, "smw.exe"))
 				pass
-			for file_name in ["smw.ini"]:
-				if not os.path.exists(os.path.join(install_dir, file_name)):
-					shutil.copy2(os.path.join(install_dir, "launcher", file_name), os.path.join(install_dir, file_name))
 			for file_name in ["smw.exe", "sdl2.dll"]:
 				if not os.path.exists(os.path.join(install_dir, file_name)):
 					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
@@ -1584,9 +1585,6 @@ def makeSMW():
 		try:
 			if os.path.exists(os.path.join(install_dir, "smw")):
 				os.remove(os.path.join(install_dir, "smw"))
-			for file_name in ["smw.ini"]:
-				if not os.path.exists(os.path.join(install_dir, file_name)):
-					shutil.copy2(os.path.join(install_dir, "launcher", file_name), os.path.join(install_dir, file_name))
 			for file_name in ["smw"]:
 				if not os.path.exists(os.path.join(install_dir, file_name)):
 					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
@@ -2099,29 +2097,31 @@ def play_animation(build_finished):
 	animation_running = True
 
 	while animation_running:
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
+		try:
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					animation_running = False
+
+			# Limit the frame rate to 30 FPS (33 milliseconds per frame)
+			clock.tick(10)
+
+			frame_index = (frame_index + 1) % len(frames)
+
+			screen.fill((0, 0, 0))
+			screen.blit(
+				frames[frame_index],
+				(
+					(SCREEN_WIDTH - frames[frame_index].get_width()) // 2,
+					(SCREEN_HEIGHT - frames[frame_index].get_height()) // 2,
+				),
+			)
+			pygame.display.flip()
+
+			# Check if the build is finished
+			if build_finished.is_set():
 				animation_running = False
-
-		# Limit the frame rate to 30 FPS (33 milliseconds per frame)
-		clock.tick(10)
-
-		frame_index = (frame_index + 1) % len(frames)
-
-		screen.fill((0, 0, 0))
-		screen.blit(
-			frames[frame_index],
-			(
-				(SCREEN_WIDTH - frames[frame_index].get_width()) // 2,
-				(SCREEN_HEIGHT - frames[frame_index].get_height()) // 2,
-			),
-		)
-		pygame.display.flip()
-
-		# Check if the build is finished
-		if build_finished.is_set():
-			animation_running = False
-
+		except Exception as e:
+			pass
 def main():
 	pygame.init()
 	if asspat() is not None:
