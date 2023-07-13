@@ -36,7 +36,7 @@ from OpenGL.GL.shaders import compileShader, compileProgram
 
 
 
-mute = True
+mute = False
 # Assets folder stuff
 current_dir = "."
 assets_path = os.path.join(current_dir, 'assets')
@@ -2124,11 +2124,12 @@ def play_animation(build_finished):
 			pass
 def main():
 	pygame.init()
-	if asspat() is not None:
+	if sysenv != 3:
 		build_finished = threading.Event()
 		animation_thread = threading.Thread(target=play_animation, args=(build_finished,))
 		animation_thread.start()
-		build_game()
+	build_game()
+	if sysenv != 3:
 		build_finished.set()
 		animation_thread.join()
 		pygame.quit()
