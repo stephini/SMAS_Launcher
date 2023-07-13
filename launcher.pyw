@@ -68,7 +68,7 @@ else:
 
 
 # -------------------- Path Stuff --------------------
-script_name = "SMAS Launcher"
+script_name = "SMASLauncher"
 install_dir = os.path.join(appdata_path, script_name)
 sfc_dir = os.path.join( install_dir, "sfcs")
 image_dir = os.path.join(install_dir, "pngs")
@@ -113,17 +113,20 @@ except json.JSONDecodeError:
 myEvents = []
 
 # Is code being ran as EXE or PYW
-ExeLoc = os.path.basename(sys.executable).lower()
-
 pygame.mixer.init()
 
-def asspat(): #assets path since i keep asking "Wtf is asspat?" only to remember this comment is so I stop asking myself that. :P 
-	if ExeLoc == "launcher.exe":
-		ass_pat = os.path.join(sys._MEIPASS, "assets")#asspat windows
-	elif ExeLoc in ("launcher.app", "launcher"):
-		ass_pat = os.path.join(sys._MEIPASSBASE, "assets")#asspat mac+linux
-	else:
+def asspat(): #assets path since i keep asking "Wtf is asspat?" only to remember this comment is so I stop asking myself that. :P
+	ass_pat = None
+
+	if hasattr(sys, '_MEIPASS') or hasattr(sys, '_MEIPASSBASE'):
+		if sysenv == 1:
+			ass_pat = os.path.join(sys._MEIPASS, "assets")#asspat windows
+		elif sysenv == 2 or sysenv == 3:
+			ass_pat = os.path.join(sys._MEIPASSBASE, "assets")#asspat mac+linux
+	elif os.path.exists(os.path.join(".", "assets")):
 		ass_pat = os.path.join(".", "assets")#asspat script
+	else:
+		ass_pat = None
 	return ass_pat
 
 def err_handler(message):
@@ -138,8 +141,9 @@ def err_handler(message):
 	WHITE = (255, 255, 255)
 	BLACK = (0, 0, 0)
 	err_window.fill(WHITE)
-	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
-	pygame.display.set_icon(icon)
+	if asspat() is not None:
+		icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
+		pygame.display.set_icon(icon)
 
 	# Render the error message
 	text = font.render(message, True, BLACK)
@@ -167,7 +171,28 @@ def err_handler(message):
 					pyperclip.copy(message)  # Copy the message to the clipboard
 					pygame.quit()
 
-def launch_mario(sfc_path, window): 
+def remove_werror_flag(makefile_path):
+    with open(makefile_path, 'r') as f:
+        lines = f.readlines()
+
+    modified_lines = []
+    werror_flag_removed = False
+
+    for line in lines:
+        if line.strip().startswith('CFLAGS'):
+            if '-Werror' in line:
+                line = line.replace('-Werror', '')
+                werror_flag_removed = True
+        modified_lines.append(line)
+
+    if werror_flag_removed:
+        with open(makefile_path, 'w') as f:
+            f.writelines(modified_lines)
+        print("Removed -Werror flag from Makefile.")
+    else:
+        print("No -Werror flag found in Makefile.")
+
+def launch_mario(sfc_path, window):
 	try:
 		pygame.display.quit  # Close the launcher window
 
@@ -439,8 +464,9 @@ def show_options_window():
 	height = 673
 	Goptions_window = pygame.display.set_mode((width, height))
 	pygame.display.set_caption("Game Options")
-	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
-	pygame.display.set_icon(icon)
+	if asspat() is not None:
+		icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
+		pygame.display.set_icon(icon)
 	Goptions_window.fill((0,0,0))
 	options = read_ini_options()
 
@@ -517,7 +543,7 @@ def show_options_window():
 	selectedtab = 0
 	slider = [0,37,53,308,329]
 	font = pygame.font.Font(None, 41)
-	
+
 
 	LblRects = []
 	for label in labels:
@@ -526,7 +552,7 @@ def show_options_window():
 	offsets = [
 		(-1, -1), (-1, 1), (1, -1), (1, 1)
 	]
-	
+
 	Tab1Rect = pygame.Rect((0,0),(142,57))
 	Tab2Rect = pygame.Rect((147,0),(142,57))
 	Tab3Rect = pygame.Rect((294,0),(142,57))
@@ -570,17 +596,17 @@ def show_options_window():
 	YRect = pygame.Rect(xboxloc[9],(64,64))
 	LBRect = pygame.Rect(xboxloc[10],(64,64))
 	RBRect = pygame.Rect(xboxloc[11],(64,64))
-	
+
 	packup = False
 	packdown = False
 	shadup = False
 	shaddown = False
 	updatecontroller = False
-	
-	
-	
+
+
+
 	while running:
-		
+
 		Goptions_window.fill((0,0,0))
 		Goptions_window.blit(GOBG, (0, 0))
 		Goptions_window.blit(TabSel if selectedtab==0 else TabUnSel, (0, 0))
@@ -606,8 +632,8 @@ def show_options_window():
 			Goptions_window.blit(ButtonG if options["OutputMethod"] == "SDL-Software" else ButtonB, (50+labels[16][1][1][0]+5+32+5+labels[17][1][1][0]+5, 67+41*7))
 			Goptions_window.blit(ButtonG if options["OutputMethod"] == "OpenGL" else ButtonB, (50+labels[16][1][1][0]+5+32+5+labels[17][1][1][0]+5+32+5+labels[18][1][1][0]+5, 67+41*7))
 			Goptions_window.blit(ButtonSG if options["LinearFiltering"] == 1 else ButtonSB, (5+labels[19][1][1][0]+5, 67+41*8))
-			
-			
+
+
 			# ----------------------shader stuff-------------------------
 			shaderpacks = parse_directory(os.path.join(install_dir, "glsl-shaders"))
 			shader_option = options["Shader"]
@@ -632,7 +658,7 @@ def show_options_window():
 						if shaderpack == shadfolder:
 							packindex = idx
 							break
-					
+
 					if shaderpack is not None:
 						shaders = parse_glsl_files(os.path.join(install_dir, "glsl-shaders", shaderpack))
 					for idx, shad in enumerate(shaders):
@@ -646,7 +672,7 @@ def show_options_window():
 							else:
 								shaderindex = idx
 							break
-							
+
 					if packindex is None:
 						packindex = 0
 					if shaderindex is None:
@@ -661,7 +687,7 @@ def show_options_window():
 					else:
 						options["Shader"] = "None"
 
-					
+
 			else:
 				shaderpack = "None"
 
@@ -669,14 +695,14 @@ def show_options_window():
 			packdown = False
 			shaddown = False
 			shadup = False
-			
+
 			draw_slider(Goptions_window, sliderart, 10)
 			Goptions_window.blit(ButtonG, (87+calculate_slider_position(0,len(shaderpacks)-1,packindex),67+41*10))
-			
+
 			draw_slider(Goptions_window, sliderart, 11)
 			Goptions_window.blit(ButtonG, (87 + calculate_slider_position(0, max(len(shaders)-1, 0), shaderindex), 67 + 41 * 11))
-			
-			
+
+
 			color = (100,100,100)
 			TxtSur = font.render(shaderpack, True, color)
 			outline_surface = font.render(shaderpack, True, (0, 0, 0))
@@ -692,24 +718,24 @@ def show_options_window():
 				for dx, dy in offsets:
 					Goptions_window.blit(outline_surface, TxtRect.move(dx, dy))
 				Goptions_window.blit(TxtSur, TxtRect)
-			
+
 			shadfile = os.path.join(install_dir, "glsl-shaders", shaderpack, shader)
-			
+
 			#shader_surface = create_shader_surface(os.path.join(launcher_dir,"GOBG.png" ),shadfile)
 			#Goptions_window.blit(shader_surface(540,150))
 			# -----------------------------------shader stuff end---------------------------
 			pass
 		elif selectedtab == 2:
 			Goptions_window.blit(ButtonSG if options["EnableAudio"] == 1 else ButtonSB, (5+labels[21][1][1][0]+5, 67+41*0))
-			
+
 			SampleRateList = [11025, 22050, 32000, 44100, 48000]
 			draw_slider(Goptions_window, sliderart, 2)
 			Goptions_window.blit(ButtonG, (87+calculate_slider_position(0,4,SampleRateList.index(options["AudioFreq"])),67+41*2))
 
 			Goptions_window.blit(ToggleL if options["AudioChannels"] == 1 else ToggleR, (5+labels[23][1][1][0]+5, 67+41*3))
-			
+
 			draw_slider(Goptions_window, sliderart, 5)
-			
+
 			buffers = [512, 1024, 2048, 4096]
 			Goptions_window.blit(ButtonG, (87+calculate_slider_position(0,3,buffers.index(options["AudioSamples"])),67+41*5))
 		elif selectedtab == 3:
@@ -726,8 +752,8 @@ def show_options_window():
 			for idx, input in enumerate(xinputarray):
 				if input in xboxmap:
 					Goptions_window.blit(xbox[xboxmap.index(input)], xboxloc[idx])
-		
-		
+
+
 		for idx, label in enumerate(labels):
 			if selectedtab == label[3] or label[3]==10:
 				text = label[0]  # Get the text from the data
@@ -989,7 +1015,7 @@ def parse_directory(DIR):
 		if os.path.isdir(item_path):
 			folders.append(item)
 	return folders
-	
+
 def parse_glsl_files(DIR):
 	shaders = []
 	for root, dirs, files in os.walk(DIR):
@@ -1005,8 +1031,9 @@ def show_Loptions_window():
 	height = 673
 	Loptions_window = pygame.display.set_mode((width, height))
 	pygame.display.set_caption("Launcher Options")
-	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
-	pygame.display.set_icon(icon)
+	if asspat() is not None:
+		icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
+		pygame.display.set_icon(icon)
 	global Loptions
 	UIDir = os.path.join(launcher_dir,"UI")
 	LOBG = pygame.image.load(os.path.join(launcher_dir,"LOBG.png" )).convert_alpha()
@@ -1042,7 +1069,7 @@ def show_Loptions_window():
 	OnloadRect = pygame.Rect((258,383),(80,32))
 	QuitRect = pygame.Rect((896,636),(80,32))
 	ColorBoxRect = pygame.Rect((437, 219), (114,114))
-	
+
 	labels = [
 		["Selector", ((5,13), (82, 41)), (255, 255, 255)],
 		["Arrow", ((45,54), (82, 41)), (200, 200, 200)],
@@ -1061,7 +1088,7 @@ def show_Loptions_window():
 	]
 
 	font = pygame.font.Font(None, 41)
-	
+
 
 	LblRects = []
 	for label in labels:
@@ -1254,7 +1281,7 @@ def extract_smas():
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
 		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	
+
 def git_clone(src, target, branch="main"):
 	try:
 		os.makedirs(target)
@@ -1308,11 +1335,11 @@ def filefextract(url):
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
 		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	
+
 def build_with_tcc():
 	cwd = smw_dir
-	env = os.path.join(cwd, "third_party", "SDL2-2.86.5")
-	exe = os.path.join(cwd, "third_party/tcc/tcc")
+	env = os.path.join(cwd, "third_party", "SDL2-2.26.5")
+	exe = os.path.join(cwd, "third_party", "tcc", "tcc.exe")
 	files = (
 		glob.glob("src/*.c", recursive=False) +
 		glob.glob("src/snes/*.c", recursive=False) +
@@ -1320,13 +1347,13 @@ def build_with_tcc():
 		glob.glob("smbll/*.c", recursive=False)
 	)
 	args = ["-osmw.exe", "-DCOMPILER_TCC=1", "-DSTBI_NO_SIMD=1", "-DHAVE_STDINT_H=1", "-D_HAVE_STDINT_H=1", "-DSYSTEM_VOLUME_MIXER_AVAILABLE=0", f"-I{env}/include", f"-L{env}/lib/x64", "-lSDL2", "-I."]
-	if sysenv == 2 or sysenv == 3:
-		args[0] = "-osmw"
-		del args[6]
-		del args[6]
 	cmd = [exe, *args, *files]
-	process = subprocess.Popen(cmd, cwd=cwd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
-	stderr, stdout = process.communicate()
+	envinc=os.path.join(env, "include")
+	envx64=os.path.join(env, "lib", "x64")
+	subprocess.run(f"{exe} -osmw.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -I{envinc} -L{envx64} -lSDL2 -I. src/*.c src/snes/*.c third_party/gl_core/gl_core_3_1.c smb1/*.c smbll/*.c", cwd=cwd)
+	#subprocess.run(cmd, cwd=cwd)
+	#process = subprocess.Popen(cmd, cwd=cwd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+	#stderr, stdout = process.communicate()
 	if sysenv == 1:
 		shutil.copy2(os.path.join(env, "lib", "x64", "SDL2.dll"), cwd)
 
@@ -1373,7 +1400,7 @@ def build_game():
 				#shutil.move(file_name,os.path.join(install_dir, file_name))
 				shutil.copy2(file_name,os.path.join(install_dir, file_name))
 		except FileNotFoundError as e:
-			err_handler(f"File not found.\nFile: {e.filename}")
+			err_handler(f"File not found. sfc\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
@@ -1384,7 +1411,7 @@ def build_game():
 			for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
 			   shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
 		except FileNotFoundError as e:
-			err_handler(f"File not found.\nFile: {e.filename}")
+			err_handler(f"File not found. zst\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
@@ -1406,7 +1433,7 @@ def build_game():
 		if not os.path.exists(os.path.join(install_dir, "sfcs")):
 			os.makedirs(os.path.join( install_dir, "sfcs" ), exist_ok=True)
 	except FileNotFoundError as e:
-		err_handler(f"File not found.\nFile: {e.filename}")
+		err_handler(f"File not found. sfcs\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1417,7 +1444,7 @@ def build_game():
 			if not os.path.exists(os.path.join(install_dir, "sfcs", file_name)):
 				shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
 	except FileNotFoundError as e:
-		err_handler(f"File not found.\nFile: {e.filename}")
+		err_handler(f"File not found. sfc3\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1427,7 +1454,7 @@ def build_game():
 			if os.path.exists(os.path.join(install_dir, file_name)):
 				os.remove(os.path.join(install_dir, file_name))
 	except FileNotFoundError as e:
-		err_handler(f"File not found.\nFile: {e.filename}")
+		err_handler(f"File not found. zst\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1437,7 +1464,7 @@ def build_game():
 			if os.path.exists(os.path.join(install_dir, file_name)):
 				shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
 	except FileNotFoundError as e:
-		err_handler(f"File not found.\nFile: {e.filename}")
+		err_handler(f"File not found. sfc1\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -1529,32 +1556,42 @@ def update_and_switch_branch(repo_path, branch_name, remote_name='origin'):
 	porcelain.pull(repo_path, remote_name, branch_name)
 
 def makeSMW():
+	if(sysenv == 2):
+		makefile_path = os.path.join(smw_dir, "Makefile")
+		remove_werror_flag(makefile_path)
 	if(sysenv == 1):
 		build_with_tcc()
-		
+
 		try:
-			if os.path.exists(os.path.exists(install_dir, "smw.exe")):
-				os.remove(os.path.exists(install_dir, "smw.exe"))
-			for file_name in ["smw.exe", "smw.ini", "sdl2.dll"]:
+			if os.path.exists(os.path.join(install_dir, "smw.exe")):
+				#os.remove(os.path.join(install_dir, "smw.exe"))
+				pass
+			for file_name in ["smw.ini"]:
+				if not os.path.exists(os.path.join(install_dir, file_name)):
+					shutil.copy2(os.path.join(install_dir, "launcher", file_name), os.path.join(install_dir, file_name))
+			for file_name in ["smw.exe", "sdl2.dll"]:
 				if not os.path.exists(os.path.join(install_dir, file_name)):
 					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
 		except FileNotFoundError as e:
-			err_handler(f"File not found.\nFile: {e.filename}")
+			err_handler(f"File not found. exe\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
 				err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 	else:
 		subprocess.run("make",cwd = smw_dir)
-		
+
 		try:
-			if os.path.exists(os.path.exists(install_dir, "smw")):
-				os.remove(os.path.exists(install_dir, "smw"))
-			for file_name in ["smw", "smw.ini"]:
+			if os.path.exists(os.path.join(install_dir, "smw")):
+				os.remove(os.path.join(install_dir, "smw"))
+			for file_name in ["smw.ini"]:
+				if not os.path.exists(os.path.join(install_dir, file_name)):
+					shutil.copy2(os.path.join(install_dir, "launcher", file_name), os.path.join(install_dir, file_name))
+			for file_name in ["smw"]:
 				if not os.path.exists(os.path.join(install_dir, file_name)):
 					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
 		except FileNotFoundError as e:
-			err_handler(f"File not found.\nFile: {e.filename}")
+			err_handler(f"File not found. smw\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
@@ -1607,7 +1644,7 @@ def copy_smasl():
 				if not os.path.exists(dst_path):
 					os.makedirs(os.path.dirname(dst_path), exist_ok=True)
 					shutil.copy2(src_path, dst_path)
-					print(f"Copied: {src_path} -> {dst_path}")
+					#print(f"Copied: {src_path} -> {dst_path}")
 
 def copyGLSL():
 	src_dir = glsl_dir
@@ -1629,7 +1666,7 @@ def copyGLSL():
 			if not os.path.exists(dst_path):
 				os.makedirs(os.path.dirname(dst_path), exist_ok=True)
 				shutil.copy2(src_path, dst_path)
-				print(f"Copied: {src_path} -> {dst_path}")
+				#print(f"Copied: {src_path} -> {dst_path}")
 
 def create_shader_surface(image_path, shader_path):
 	# Initialize Pygame
@@ -1671,8 +1708,9 @@ def update_window():
 	window_size = (width, height)
 	upgrade_window = pygame.display.set_mode((width, height))
 	pygame.display.set_caption("Upgrade Menu")
-	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
-	pygame.display.set_icon(icon)
+	if asspat() is not None:
+		icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
+		pygame.display.set_icon(icon)
 	UIDir = os.path.join(launcher_dir,"UI")
 	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
 	UBG = pygame.image.load(os.path.join(launcher_dir,"UBG.png" )).convert_alpha()
@@ -1690,7 +1728,7 @@ def update_window():
 	ToggleR = pygame.image.load(os.path.join(UIDir,"ToggleR.png" )).convert_alpha()
 	ColorBox = pygame.image.load(os.path.join(UIDir,"ColorBox.png" )).convert_alpha()
 	ui_manager = pygame_gui.UIManager(window_size)
-	
+
 	labels = [
 		["SMW", ((5,50), (113, 41)), (255, 255, 255),10],
 		["SMAS Launcher", ((5,150), (125, 41)), (255, 255, 255),10],
@@ -1931,8 +1969,9 @@ def create_launcher_window():
 	height = 673
 	main_window = pygame.display.set_mode((width, height))
 	pygame.display.set_caption("SMAS Launcher")
-	icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
-	pygame.display.set_icon(icon)
+	if asspat() is not None:
+		icon = pygame.image.load(os.path.join(asspat(), 'icon.png'))
+		pygame.display.set_icon(icon)
 	audio_file_path = os.path.join(launcher_dir, bgm_location)  # Replace with the actual path to your audio file
 	UIDir = os.path.join(launcher_dir,"UI")
 	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
@@ -1944,7 +1983,7 @@ def create_launcher_window():
 		except pygame.error:
 			err_handler("Error: Failed to play audio")
 		except FileNotFoundError as e:
-			err_handler(f"File not found.\nFile: {e.filename}")
+			err_handler(f"File not found. audio\nFile: {e.filename}")
 		except PermissionError as e:
 			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 		except Exception as e:
@@ -2038,9 +2077,9 @@ def play_animation(build_finished):
 	# Load animation frames
 	frames = []
 	try:
-		animation_sheet = pygame.image.load(os.path.join(assets_path, 'downloading.png'))
+		animation_sheet = pygame.image.load(os.path.join(asspat(), 'downloading.png'))
 	except FileNotFoundError as e:
-		err_handler(f"File not found.\nFile: {e.filename}")
+		err_handler(f"File not found. downloading\nFile: {e.filename}")
 	except PermissionError as e:
 		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
 	except Exception as e:
@@ -2085,14 +2124,15 @@ def play_animation(build_finished):
 
 def main():
 	pygame.init()
-	build_finished = threading.Event()
-	animation_thread = threading.Thread(target=play_animation, args=(build_finished,))
-	animation_thread.start()
-	build_game()
-	build_finished.set()
-	animation_thread.join()
-	pygame.quit()
-	pygame.init()
+	if asspat() is not None:
+		build_finished = threading.Event()
+		animation_thread = threading.Thread(target=play_animation, args=(build_finished,))
+		animation_thread.start()
+		build_game()
+		build_finished.set()
+		animation_thread.join()
+		pygame.quit()
+		pygame.init()
 	create_launcher_window()
 
 if __name__ == "__main__":

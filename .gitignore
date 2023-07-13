@@ -1,6 +1,9 @@
 # Ignore compiled binaries
 *.exe
 
+# Venv Crap
+venv/
+
 # Ignore SFC files
 *.sfc
 
