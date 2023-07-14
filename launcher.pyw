@@ -1,5 +1,8 @@
 import os
 import sys
+null_device = open(os.devnull, 'w')
+sys.stdout = null_device
+sys.stderr = null_device
 from PIL import Image
 if sys.platform == 'win32':
 	import win32gui
@@ -11,12 +14,7 @@ import shutil
 import requests
 import zipfile
 import subprocess
-null_device = open(os.devnull, 'w')
-sys.stdout = null_device
-sys.stderr = null_device
 import pygame
-sys.stdout = sys.__stdout__
-sys.stderr = sys.__stderr__
 import threading
 import inspect
 import time
@@ -33,7 +31,8 @@ from dulwich.index import build_index_from_tree
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
-
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
 
 
 mute = False
@@ -1560,7 +1559,7 @@ def update_and_switch_branch(repo_path, branch_name, remote_name='origin'):
 	porcelain.pull(repo_path, remote_name, branch_name)
 
 def makeSMW():
-	if(sysenv == 2):
+	if(sysenv == 3):
 		makefile_path = os.path.join(smw_dir, "Makefile")
 		remove_werror_flag(makefile_path)
 	if(sysenv == 1):
@@ -1580,7 +1579,7 @@ def makeSMW():
 		except Exception as e:
 				err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 	else:
-		subprocess.run("make",cwd = smw_dir)
+		subprocess.run("make",cwd = smw_dir, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
 
 		try:
 			if os.path.exists(os.path.join(install_dir, "smw")):
@@ -2068,9 +2067,11 @@ def create_main_window_button(main_window, Label, GOW, GOX, GOY, func):
 	GOTX, GOTY = GO_text_rect.topleft
 	main_window.blit(GOtext, (GOTX,GOTY+10))
 
-def play_animation(build_finished):
+def play_animation(build_thread):
+	pygame.init
 	screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
 	pygame.display.set_caption("Splash Screen")
+	screen.fill((0,0,0))
 
 	# Load animation frames
 	frames = []
@@ -2083,7 +2084,7 @@ def play_animation(build_finished):
 	except Exception as e:
 		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
 
-	for i in range(7):
+	for i in range(14):
 		frame = animation_sheet.subsurface(
 			pygame.Rect(0, i * FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT)
 		)
@@ -2093,47 +2094,16 @@ def play_animation(build_finished):
 		frames.append(frame)
 
 	# Play animation
-	frame_index = 0
-	animation_running = True
-
-	while animation_running:
-		try:
-			for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					animation_running = False
-
-			# Limit the frame rate to 30 FPS (33 milliseconds per frame)
+	while build_thread.is_alive():
+		for frame in frames:
+			screen.blit(frame, (0,0))
+			pygame.display.update()
 			clock.tick(10)
 
-			frame_index = (frame_index + 1) % len(frames)
-
-			screen.fill((0, 0, 0))
-			screen.blit(
-				frames[frame_index],
-				(
-					(SCREEN_WIDTH - frames[frame_index].get_width()) // 2,
-					(SCREEN_HEIGHT - frames[frame_index].get_height()) // 2,
-				),
-			)
-			pygame.display.flip()
-
-			# Check if the build is finished
-			if build_finished.is_set():
-				animation_running = False
-		except Exception as e:
-			pass
 def main():
-	pygame.init()
-	if sysenv != 3:
-		build_finished = threading.Event()
-		animation_thread = threading.Thread(target=play_animation, args=(build_finished,))
-		animation_thread.start()
-	build_game()
-	if sysenv != 3:
-		build_finished.set()
-		animation_thread.join()
-		pygame.quit()
-		pygame.init()
+	build_thread = threading.Thread(target=build_game)
+	build_thread.start()
+	play_animation(build_thread)
 	create_launcher_window()
 
 if __name__ == "__main__":
