@@ -1,8 +1,7 @@
 import os
 import sys
-null_device = open(os.devnull, 'w')
-sys.stdout = null_device
-sys.stderr = null_device
+import logging
+import traceback
 from PIL import Image
 if sys.platform == 'win32':
 	import win32gui
@@ -31,8 +30,6 @@ from dulwich.index import build_index_from_tree
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
-sys.stdout = sys.__stdout__
-sys.stderr = sys.__stderr__
 
 
 mute = False
@@ -128,6 +125,29 @@ def asspat(): #assets path since i keep asking "Wtf is asspat?" only to remember
 		ass_pat = None
 	return ass_pat
 
+class TeeLogger:
+	def __init__(self, name, log_file):
+		self.logger = logging.getLogger(name)
+		self.logger.setLevel(logging.DEBUG)
+		self.stdout_logger = logging.StreamHandler(sys.stdout)
+		self.file_logger = logging.FileHandler(log_file)
+		self.logger.addHandler(self.stdout_logger)
+		self.logger.addHandler(self.file_logger)
+
+	def write(self, message):
+		self.logger.info(message)
+
+	def flush(self):
+		pass
+
+	def close(self):
+		self.file_logger.close()
+
+# Redirect stdout and stderr to the tee_logger
+tee_logger = TeeLogger("TeeLogger", "launcher.log")
+sys.stdout = tee_logger
+sys.stderr = tee_logger
+
 def err_handler(message):
 	WIDTH = 300
 	HEIGHT = 300
@@ -189,38 +209,30 @@ def remove_werror_flag(makefile_path):
             f.writelines(modified_lines)
 
 def launch_mario(sfc_path, window):
-	try:
-		pygame.display.quit  # Close the launcher window
+	pygame.display.quit  # Close the launcher window
 
-		# Construct the command
-		if sysenv == 1:
-			mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
-		else:
-			mario_command = [os.path.join(install_dir, smw_path), sfc_path]
-		# Create subprocess startup information
-		# Run the command
+	# Construct the command
+	if sysenv == 1:
+		mario_command = f"\"{os.path.join(install_dir, smw_path)}\" \"{sfc_path}\""
+	else:
+		mario_command = [os.path.join(install_dir, smw_path), sfc_path]
+	# Create subprocess startup information
+	# Run the command
 
-		sfx_sound = pygame.mixer.Sound(os.path.join(launcher_dir,"pg.wav"))
-		sfx_channel = sfx_sound.play()
-		while sfx_channel.get_busy():
-			clock.tick(10)
-		subprocess.Popen(mario_command, cwd = install_dir, shell=False)
-		if Loptions["onload"] == 2:
-			pygame.mixer.music.pause()
-		elif Loptions["onload"] == 1:
-			exit()
-		time.sleep(.5)
-		if sysenv == 1:
-			window_handle = win32gui.FindWindow(None, os.path.join(install_dir, f"{smw_path}.exe"))
-			if window_handle != 0:
-				win32gui.ShowWindow(window_handle, win32con.SW_HIDE)
-
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	sfx_sound = pygame.mixer.Sound(os.path.join(launcher_dir,"pg.wav"))
+	sfx_channel = sfx_sound.play()
+	while sfx_channel.get_busy():
+		clock.tick(10)
+	subprocess.Popen(mario_command, cwd = install_dir, shell=False)
+	if Loptions["onload"] == 2:
+		pygame.mixer.music.pause()
+	elif Loptions["onload"] == 1:
+		exit()
+	time.sleep(.5)
+	if sysenv == 1:
+		window_handle = win32gui.FindWindow(None, os.path.join(install_dir, f"{smw_path}.exe"))
+		if window_handle != 0:
+			win32gui.ShowWindow(window_handle, win32con.SW_HIDE)
 
 def scan_sfcs_folder():
 	sfcs = []
@@ -305,14 +317,7 @@ def create_buttons(sfcs, main_window ):
 def read_ini_options():
 	config = configparser.ConfigParser()
 
-	try:
-		config.read(os.path.join(install_dir, ini_path))
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	config.read(os.path.join(install_dir, ini_path))
 
 
 	options = {}
@@ -445,15 +450,8 @@ def write_ini_options(options):
 	# Write options to the [GamepadMap] section
 	gamepad_options = config["GamepadMap"]
 	gamepad_options["Controls"] = options["GamepadControls"]
-	try:
-		with open(os.path.join(install_dir, ini_path), "w") as config_file:
-			config.write(config_file)
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	with open(os.path.join(install_dir, ini_path), "w") as config_file:
+		config.write(config_file)
 
 def show_options_window():
 	width = 981
@@ -1229,14 +1227,7 @@ def extract_smas():
 	SHA1_HASH_SMB1 = '4a5278150f3395419d68cb02a42f7c3c62cdf8b4'
 	SHA1_HASH_SMBLL = '493e14812af7a92d0eacf00ba8bb6d3a266302ca'
 
-	try:
-		smas = open(os.path.join(install_dir, 'smas.sfc'), 'rb').read()
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	smas = open(os.path.join(install_dir, 'smas.sfc'), 'rb').read()
 	hash = hashlib.sha1(smas).hexdigest()
 	if hash != SHA1_HASH:
 	  err_handler('You need SMAS with sha1 ' + SHA1_HASH + ' yours is ' + hash)
@@ -1250,15 +1241,8 @@ def extract_smas():
 	if hash != SHA1_HASH_SMB1:
 	  err_handler('Error. SMB1 hash is supposed to be ' + SHA1_HASH_SMB1 + ' yours is ' + hash)
 
-	try:
-		with open(os.path.join(install_dir, 'smb1.sfc'), 'wb') as ofp:
-			ofp.write(out)
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	with open(os.path.join(install_dir, 'smb1.sfc'), 'wb') as ofp:
+		ofp.write(out)
 
 
 	cctx = zstandard.ZstdDecompressor(dict_data=dict_data)
@@ -1268,21 +1252,11 @@ def extract_smas():
 	if hash != SHA1_HASH_SMBLL:
 	  err_handler('Error. SMBLL hash is supposed to be ' + SHA1_HASH_SMBLL + ' yours is ' + hash)
 
-	try:
-		with open(os.path.join(install_dir, 'smbll.sfc'), 'wb') as ofp:
-			ofp.write(out)
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	with open(os.path.join(install_dir, 'smbll.sfc'), 'wb') as ofp:
+		ofp.write(out)
 
 def git_clone(src, target, branch="main"):
-	try:
-		os.makedirs(target)
-	except Exception as e:
-		err_handler(e)
+	os.makedirs(target)
 	client, path = dulwich_client.get_transport_and_path(src)
 	r = Repo.init(target)
 
@@ -1300,37 +1274,16 @@ def filefextract(url):
 	response.raise_for_status()
 
 	# Save the file
-	try:
-		with open(filename, "wb") as file:
-			file.write(response.content)
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name}\n\n{typee.__name__}: {stre}")
+	with open(filename, "wb") as file:
+		file.write(response.content)
 
 
 	# Extract the file to the destination directory
-	try:
-		with zipfile.ZipFile(filename, "r") as zip_ref:
-			zip_ref.extractall(destination_dir)
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	with zipfile.ZipFile(filename, "r") as zip_ref:
+		zip_ref.extractall(destination_dir)
 
 	# Delete the downloaded zip file
-	try:
-		os.remove(filename)
-	except FileNotFoundError as e:
-		err_handler(f"Error: File not found\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	os.remove(filename)
 
 def build_with_tcc():
 	cwd = smw_dir
@@ -1391,27 +1344,15 @@ def build_game():
 	if not os.path.exists(install_dir):
 		os.makedirs(install_dir)
 	if not os.path.exists(os.path.join(install_dir, "smw.sfc")) and not os.path.exists(os.path.join(install_dir,"sfcs", "smw.sfc")):
-		try:
-			for file_name in ["smas.sfc", "smw.sfc"]:
-				#shutil.move(file_name,os.path.join(install_dir, file_name))
-				shutil.copy2(file_name,os.path.join(install_dir, file_name))
-		except FileNotFoundError as e:
-			err_handler(f"File not found. sfc\nFile: {e.filename}")
-		except PermissionError as e:
-			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-		except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+		for file_name in ["smas.sfc", "smw.sfc"]:
+			#shutil.move(file_name,os.path.join(install_dir, file_name))
+			shutil.copy2(file_name,os.path.join(install_dir, file_name))
+
 	if not os.path.exists(os.path.join(smw_dir, ".git")):
 		git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir), "smb1")
-		try:
-			for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
-			   shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
-		except FileNotFoundError as e:
-			err_handler(f"File not found. zst\nFile: {e.filename}")
-		except PermissionError as e:
-			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-		except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+		for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
+		   shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
+
 	if not os.path.exists(os.path.join(install_dir, "smb1.sfc")) and not os.path.exists(os.path.join(install_dir, "sfcs", "smb1.sfc")):
 		extract_smas()
 	if not os.path.exists(os.path.join(smw_dir, "third_party", "tcc", "tcc.exe")):
@@ -1429,63 +1370,31 @@ def build_game():
 	if not os.path.exists(os.path.join(glsl_dir, ".git")):
 		git_clone("https://github.com/snesrev/glsl-shaders.git", glsl_dir,"master")
 	copyGLSL()
-	try:
-		if not os.path.exists(os.path.join(install_dir, "sfcs")):
-			os.makedirs(os.path.join( install_dir, "sfcs" ), exist_ok=True)
-	except FileNotFoundError as e:
-		err_handler(f"File not found. sfcs\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	if not os.path.exists(os.path.join(install_dir, "sfcs")):
+		os.makedirs(os.path.join( install_dir, "sfcs" ), exist_ok=True)
 	copy_smasl()
-	try:
-		for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
-			if not os.path.exists(os.path.join(install_dir, "sfcs", file_name)):
-				shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
-	except FileNotFoundError as e:
-		err_handler(f"File not found. sfc3\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	try:
-		for file_name in ["smbll.zst", "smb1.zst"]:
-			if os.path.exists(os.path.join(install_dir, file_name)):
-				os.remove(os.path.join(install_dir, file_name))
-	except FileNotFoundError as e:
-		err_handler(f"File not found. zst\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
-	try:
-		for file_name in ["smas.sfc"]:
-			if os.path.exists(os.path.join(install_dir, file_name)):
-				shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
-	except FileNotFoundError as e:
-		err_handler(f"File not found. sfc1\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	for file_name in ["smb1.sfc", "smbll.sfc", "smw.sfc"]:
+		if not os.path.exists(os.path.join(install_dir, "sfcs", file_name)):
+			shutil.move(os.path.join( install_dir, file_name), os.path.join(sfc_dir, file_name))
+	for file_name in ["smbll.zst", "smb1.zst"]:
+		if os.path.exists(os.path.join(install_dir, file_name)):
+			os.remove(os.path.join(install_dir, file_name))
+	for file_name in ["smas.sfc"]:
+		if os.path.exists(os.path.join(install_dir, file_name)):
+			shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
 
 def scan_repo_for_branches(local_path, remote_path):
-	try:
-		repo = Repo(local_path)
-		client, path = dulwich_client.get_transport_and_path(remote_path)
-		branches = []
+	repo = Repo(local_path)
+	client, path = dulwich_client.get_transport_and_path(remote_path)
+	branches = []
 
-		remote_refs = client.get_refs(path)
-		for ref in remote_refs.keys():
-			if ref.startswith(b"refs/heads/"):
-				branch = ref.decode().split("/")[-1]
-				branches.append(branch)
+	remote_refs = client.get_refs(path)
+	for ref in remote_refs.keys():
+		if ref.startswith(b"refs/heads/"):
+			branch = ref.decode().split("/")[-1]
+			branches.append(branch)
 
-		return branches
-	except Exception as e:
-		print(e)
-		quit()
+	return branches
 
 def is_different_branch(repo_path, branch):
 	repo = Repo(repo_path)
@@ -1528,12 +1437,9 @@ def is_remote_newer(repo_path, remote_name='origin'):
 	local_commit = repo.get_object(repo.refs[b'refs/heads/' + current_branch])
 	remote_commit = None
 
-	try:
-		remote_branch_name = f'refs/remotes/{remote_name}/{current_branch}'
-		remote_branch_ref = repo.refs[remote_branch_name]
-		remote_commit = repo.get_object(remote_branch_ref)
-	except KeyError:
-		pass
+	remote_branch_name = f'refs/remotes/{remote_name}/{current_branch}'
+	remote_branch_ref = repo.refs[remote_branch_name]
+	remote_commit = repo.get_object(remote_branch_ref)
 
 	if remote_commit:
 		# Compare the commit IDs
@@ -1562,34 +1468,20 @@ def makeSMW():
 	if(sysenv == 1):
 		build_with_tcc()
 
-		try:
-			if os.path.exists(os.path.join(install_dir, "smw.exe")):
-				#os.remove(os.path.join(install_dir, "smw.exe"))
-				pass
-			for file_name in ["smw.exe", "sdl2.dll"]:
-				if not os.path.exists(os.path.join(install_dir, file_name)):
-					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
-		except FileNotFoundError as e:
-			err_handler(f"File not found. exe\nFile: {e.filename}")
-		except PermissionError as e:
-			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-		except Exception as e:
-				err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+		if os.path.exists(os.path.join(install_dir, "smw.exe")):
+			#os.remove(os.path.join(install_dir, "smw.exe"))
+			pass
+		for file_name in ["smw.exe", "sdl2.dll"]:
+			if not os.path.exists(os.path.join(install_dir, file_name)):
+				shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
 	else:
 		subprocess.run("make",cwd = smw_dir, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
 
-		try:
-			if os.path.exists(os.path.join(install_dir, "smw")):
-				os.remove(os.path.join(install_dir, "smw"))
-			for file_name in ["smw"]:
-				if not os.path.exists(os.path.join(install_dir, file_name)):
-					shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
-		except FileNotFoundError as e:
-			err_handler(f"File not found. smw\nFile: {e.filename}")
-		except PermissionError as e:
-			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-		except Exception as e:
-				err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+		if os.path.exists(os.path.join(install_dir, "smw")):
+			os.remove(os.path.join(install_dir, "smw"))
+		for file_name in ["smw"]:
+			if not os.path.exists(os.path.join(install_dir, file_name)):
+				shutil.copy2(os.path.join(smw_dir, file_name), os.path.join(install_dir, file_name))
 
 def copy_smasl():
 	src_dir = smasl_dir
@@ -1970,18 +1862,9 @@ def create_launcher_window():
 	UIDir = os.path.join(launcher_dir,"UI")
 	Cursor = pygame.image.load(os.path.join(UIDir,"Cursor.png" )).convert_alpha()
 	if not mute:
-		try:
-			pygame.mixer.music.load(audio_file_path)
-			pygame.mixer.music.play(-1)  # -1 indicates infinite loop
-			pass
-		except pygame.error:
-			err_handler("Error: Failed to play audio")
-		except FileNotFoundError as e:
-			err_handler(f"File not found. audio\nFile: {e.filename}")
-		except PermissionError as e:
-			err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-		except Exception as e:
-			err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+		pygame.mixer.music.load(audio_file_path)
+		pygame.mixer.music.play(-1)  # -1 indicates infinite loop
+		pass
 
 	# Scan the folder for available SFC files
 	sfcs = scan_sfcs_folder()
@@ -2071,14 +1954,7 @@ def play_animation(build_thread):
 
 	# Load animation frames
 	frames = []
-	try:
-		animation_sheet = pygame.image.load(os.path.join(asspat(), 'downloading.png'))
-	except FileNotFoundError as e:
-		err_handler(f"File not found. downloading\nFile: {e.filename}")
-	except PermissionError as e:
-		err_handler(f"Error: Permission denied\n\nFunction: {get_enclosing_function_name()}\nFile: {e.filename}")
-	except Exception as e:
-		err_handler(f"An error occurred\n\nFunction: {get_enclosing_function_name()}\n\n{type(e).__name__}: {str(e)}")
+	animation_sheet = pygame.image.load(os.path.join(asspat(), 'downloading.png'))
 
 	for i in range(14):
 		frame = animation_sheet.subsurface(
@@ -2097,12 +1973,26 @@ def play_animation(build_thread):
 			clock.tick(10)
 
 def main():
-	pygame.init
-	pygame.font.init()
-	build_thread = threading.Thread(target=build_game)
-	build_thread.start()
-	play_animation(build_thread)
-	create_launcher_window()
+	try:
+		pygame.init
+		pygame.font.init()
+		build_thread = threading.Thread(target=build_game)
+		build_thread.start()
+		play_animation(build_thread)
+		create_launcher_window()
+
+	except Exception as e:
+		# Handle exceptions and log the error
+		error_message = f"An error occurred: {str(e)}"
+		error_traceback = traceback.format_exc()
+		logging.error("%s\n%s", error_message, error_traceback)
+
+	finally:
+		# Restore the original stdout and stderr
+		sys.stdout = sys.__stdout__
+		sys.stderr = sys.__stderr__
+		tee_logger.close() # Close the log file
 
 if __name__ == "__main__":
+	logging.basicConfig(filename="launcher.log", level=logging.DEBUG)
 	main()
