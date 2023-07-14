@@ -187,9 +187,6 @@ def remove_werror_flag(makefile_path):
     if werror_flag_removed:
         with open(makefile_path, 'w') as f:
             f.writelines(modified_lines)
-        print("Removed -Werror flag from Makefile.")
-    else:
-        print("No -Werror flag found in Makefile.")
 
 def launch_mario(sfc_path, window):
 	try:
@@ -2068,7 +2065,6 @@ def create_main_window_button(main_window, Label, GOW, GOX, GOY, func):
 	main_window.blit(GOtext, (GOTX,GOTY+10))
 
 def play_animation(build_thread):
-	pygame.init
 	screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
 	pygame.display.set_caption("Splash Screen")
 	screen.fill((0,0,0))
@@ -2101,6 +2097,8 @@ def play_animation(build_thread):
 			clock.tick(10)
 
 def main():
+	pygame.init
+	pygame.font.init()
 	build_thread = threading.Thread(target=build_game)
 	build_thread.start()
 	play_animation(build_thread)
