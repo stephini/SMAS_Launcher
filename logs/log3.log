@@ -1,0 +1,33 @@
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /snesrev/smw.git/info/refs?service=git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (2): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "POST /snesrev/smw.git/git-upload-pack HTTP/1.1" 200 None
+INFO:TeeLogger:C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py:1305: DeprecationWarning: Use FetchPackResult.refs instead.
+  r[b"HEAD"] = remote_refs[f"refs/heads/{branch}".encode()]
+
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip HTTP/1.1" 302 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): objects.githubusercontent.com:443
+DEBUG:urllib3.connectionpool:https://objects.githubusercontent.com:443 "GET /github-production-release-asset-2e65be/554616125/b858824d-56a2-4493-9e87-6eb0d9d86147?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230715%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230715T011030Z&X-Amz-Expires=300&X-Amz-Signature=67be0c972df189eb50086866acaeba2aef57c5ac5774a65ed405e2371c434c88&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=554616125&response-content-disposition=attachment%3B%20filename%3Dtcc_20230519.zip&response-content-type=application%2Foctet-stream HTTP/1.1" 200 811721
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip HTTP/1.1" 302 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): objects.githubusercontent.com:443
+DEBUG:urllib3.connectionpool:https://objects.githubusercontent.com:443 "GET /github-production-release-asset-2e65be/330008801/64e36154-62ba-46bd-a1b8-9f8ef755605b?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230715%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230715T011031Z&X-Amz-Expires=300&X-Amz-Signature=d9e519f520124bb6125c1205004619ddd58f665ca8ecc1cf13d106d405972134&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=330008801&response-content-disposition=attachment%3B%20filename%3DSDL2-devel-2.26.5-VC.zip&response-content-type=application%2Foctet-stream HTTP/1.1" 200 2683218
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /stephini/SMAS_Launcher.git/info/refs?service=git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (2): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "POST /stephini/SMAS_Launcher.git/git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /snesrev/glsl-shaders.git/info/refs?service=git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (2): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "POST /snesrev/glsl-shaders.git/git-upload-pack HTTP/1.1" 200 None
+ERROR:root:!!!!!!!!!!!!!!!!!!!!!!!!!vvvvvvvvvv!!!!!!!!!!!!!!!!!!!!!!!!!
+An error occurred: 
+'Thread' object has no attribute 'result'
+!!!!!!!!!!!!!!!!!!!!!!!!!^^^^^^^^^^!!!!!!!!!!!!!!!!!!!!!!!!!
+Traceback (most recent call last):
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 2034, in main
+    return_code, error_return = build_thread.result
+                                ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Thread' object has no attribute 'result'
+

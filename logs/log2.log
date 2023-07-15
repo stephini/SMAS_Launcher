@@ -1,0 +1,42 @@
+ERROR:root:!!!!!!!!!!!!!!!!!!!!!!!!!vvvvvvvvvv!!!!!!!!!!!!!!!!!!!!!!!!!
+An error occurred: 
+'Thread' object has no attribute 'result'
+!!!!!!!!!!!!!!!!!!!!!!!!!^^^^^^^^^^!!!!!!!!!!!!!!!!!!!!!!!!!
+Traceback (most recent call last):
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 2035, in main
+    return_code, error_return = play_animation(build_thread)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 2026, in play_animation
+    return_code, error_return = build_thread.result
+                                ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Thread' object has no attribute 'result'
+
+Exception in thread 
+Thread-1 (build_game)
+:
+
+
+Traceback (most recent call last):
+
+
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+
+
+    
+self.run()
+
+
+
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+
+
+    
+self._target(*self._args, **self._kwargs)
+
+
+
+TypeError
+: 
+build_game() takes 1 positional argument but 2 were given
+
+

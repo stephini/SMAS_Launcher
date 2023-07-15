@@ -1,0 +1,57 @@
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /snesrev/smw.git/info/refs?service=git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (2): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "POST /snesrev/smw.git/git-upload-pack HTTP/1.1" 200 None
+C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py:1264: DeprecationWarning: Use FetchPackResult.refs instead.
+  r[b"HEAD"] = remote_refs[f"refs/heads/{branch}".encode()]
+
+INFO:TeeLogger:C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py:1264: DeprecationWarning: Use FetchPackResult.refs instead.
+  r[b"HEAD"] = remote_refs[f"refs/heads/{branch}".encode()]
+
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip HTTP/1.1" 302 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): objects.githubusercontent.com:443
+DEBUG:urllib3.connectionpool:https://objects.githubusercontent.com:443 "GET /github-production-release-asset-2e65be/554616125/b858824d-56a2-4493-9e87-6eb0d9d86147?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230714%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230714T144105Z&X-Amz-Expires=300&X-Amz-Signature=adcd11ea49e20cd339322460a08099f15c9fb71d2d637238f51ab9a705170d94&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=554616125&response-content-disposition=attachment%3B%20filename%3Dtcc_20230519.zip&response-content-type=application%2Foctet-stream HTTP/1.1" 200 811721
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /libsdl-org/SDL/releases/download/release-2.26.5/SDL2-devel-2.26.5-VC.zip HTTP/1.1" 302 0
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): objects.githubusercontent.com:443
+DEBUG:urllib3.connectionpool:https://objects.githubusercontent.com:443 "GET /github-production-release-asset-2e65be/330008801/64e36154-62ba-46bd-a1b8-9f8ef755605b?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230714%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230714T144107Z&X-Amz-Expires=300&X-Amz-Signature=1ec847b2c20437a9d3da15162a3d55380c26d42afb2ad81fe1d5be8505dcbb1c&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=330008801&response-content-disposition=attachment%3B%20filename%3DSDL2-devel-2.26.5-VC.zip&response-content-type=application%2Foctet-stream HTTP/1.1" 200 2683218
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /stephini/SMAS_Launcher.git/info/refs?service=git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (2): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "POST /stephini/SMAS_Launcher.git/git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "GET /snesrev/glsl-shaders.git/info/refs?service=git-upload-pack HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (2): github.com:443
+DEBUG:urllib3.connectionpool:https://github.com:443 "POST /snesrev/glsl-shaders.git/git-upload-pack HTTP/1.1" 200 None
+ERROR:root:An error occurred: The FreeType 2 library hasn't been initialized
+Traceback (most recent call last):
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 1996, in main
+    create_launcher_window()
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 1915, in create_launcher_window
+    create_main_window_button(main_window, "Update Options", 130, width//4, 593, update_window)#Game Options Button
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 1950, in create_main_window_button
+    func()
+  File "C:\Users\steph_0geszl\Repos\SMAS_Launcher\launcher.py", line 1629, in update_window
+    ui_manager = pygame_gui.UIManager(window_size)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\site-packages\pygame_gui\ui_manager.py", line 69, in __init__
+    self.ui_theme = UIAppearanceTheme(self.resource_loader, self._locale)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\site-packages\pygame_gui\core\ui_appearance_theme.py", line 62, in __init__
+    self.font_dict = UIFontDictionary(self._resource_loader, locale)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\site-packages\pygame_gui\core\ui_font_dictionary.py", line 128, in __init__
+    self._load_default_font()
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\site-packages\pygame_gui\core\ui_font_dictionary.py", line 156, in _load_default_font
+    error = default_font_res.load()
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\site-packages\pygame_gui\core\utility.py", line 395, in load
+    self.loaded_font = GUIFontFreetype(
+                       ^^^^^^^^^^^^^^^^
+  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\site-packages\pygame_gui\core\gui_font_freetype.py", line 17, in __init__
+    self.__internal_font: Font = Font(file, size, resolution=72)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The FreeType 2 library hasn't been initialized
+

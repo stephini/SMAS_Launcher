@@ -1,0 +1,29 @@
+INFO:TeeLogger:Exception in thread 
+INFO:TeeLogger:Thread-1 (build_game)
+INFO:TeeLogger::
+
+INFO:TeeLogger:
+INFO:TeeLogger:Traceback (most recent call last):
+
+INFO:TeeLogger:
+INFO:TeeLogger:  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+
+INFO:TeeLogger:
+INFO:TeeLogger:    
+INFO:TeeLogger:self.run()
+INFO:TeeLogger:
+
+INFO:TeeLogger:
+INFO:TeeLogger:  File "C:\Users\steph_0geszl\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+
+INFO:TeeLogger:
+INFO:TeeLogger:    
+INFO:TeeLogger:self._target(*self._args, **self._kwargs)
+INFO:TeeLogger:
+
+INFO:TeeLogger:
+INFO:TeeLogger:TypeError
+INFO:TeeLogger:: 
+INFO:TeeLogger:build_game() takes 1 positional argument but 2 were given
+INFO:TeeLogger:
+
