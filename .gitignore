@@ -34,3 +34,7 @@ gitpull.bat
 gitpush.bat
 gitcommitammend.bat
 gitpushforce.bat
+
+# Ignore log crap
+*.log
+logs/
