@@ -15,6 +15,7 @@ builder/
 
 # Ignore Other dev crap
 requirments.txt
+*.sublime-project
 
 # Ignore pyinstaller files
 dist/
@@ -26,14 +27,6 @@ build/
 *.deb
 *.rpm
 *.msi
-
-# Ignore git batch files
-gitaddfiles.bat
-gitcommit.bat
-gitpull.bat
-gitpush.bat
-gitcommitammend.bat
-gitpushforce.bat
 
 # Ignore log crap
 *.log
