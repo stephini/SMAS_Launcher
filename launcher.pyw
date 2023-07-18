@@ -1393,7 +1393,7 @@ def build_game(return_values):
 				shutil.copy2(file_name,os.path.join(install_dir, file_name))
 
 		if not os.path.exists(os.path.join(smw_dir, ".git")):
-			git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir), "smb1")
+			git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir))
 			for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
 			   shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
 
