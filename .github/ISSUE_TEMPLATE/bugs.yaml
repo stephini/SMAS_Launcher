@@ -43,6 +43,11 @@ body:
       - Windows 10 (64bit)
       - Windows 10 (32bit)
       - Linux
+      - macOS 13 (Ventura)
+      - macOS 12 (Monterey)
+      - macOS 11 (Big Sur)
+      - macOS 10.15 (Catalina)
+      - macOS 10.14 (Mojave)
   - type: input
     id: os-distro
     attributes:
