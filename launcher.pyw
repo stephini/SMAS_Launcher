@@ -1433,7 +1433,7 @@ def build_game(return_values):
 		logging.exception("%s\n%s", error_message, error_traceback)
 		return_values[0] = 1
 		return_values[1] = error_message
-		print return_values
+		print(return_values)
 		global logs
 		logs = return_values
 
