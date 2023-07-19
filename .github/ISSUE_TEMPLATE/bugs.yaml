@@ -51,7 +51,21 @@ body:
   - type: input
     id: os-distro
     attributes:
-      label: If Linux - Specify Distro And Distro Landmark
+      label: Windows Version(eg 11)|Linux Distro(eg Debian)|MacOS Version(eg Ventura)
+      placeholder: "Example: Arch/Buster/Bookworm/Rex/etc"
+    validations:
+      required: false
+  - type: input
+    id: os-version
+    attributes:
+      label: Windows Edition(eg Pro)|Linux Version Distro(eg Bookworm)|MacOS Machine(eg M2 Pro)
+      placeholder: "Example: Arch/Buster/Bookworm/Rex/etc"
+    validations:
+      required: false
+  - type: input
+    id: os-distro
+    attributes:
+      label: Additional OS Details. (Optional)
       placeholder: "Example: Arch/Buster/Bookworm/Rex/etc"
     validations:
       required: false

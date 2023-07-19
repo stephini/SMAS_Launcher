@@ -22,9 +22,11 @@ Executable versions for Mac and Linux will be forthcoming.
 5. Run the executable file.
 6. The launcher will launch the game, and you can start playing.
 
-## Option 2: Using Python (Recommended for Python users)
+## Option 2: Using Python (Recommended for those familiar with Python)
+(Please consult the section below on Installing Python)
 
-[Python](https://www.python.org/downloads/) has tentative support for Mac and Linux. 
+[Python] has tentative support for Mac and Linux. 
+
 
 *Note: During the installation of Python make sure to check the box that adds Python to PATH.*
 
@@ -51,3 +53,118 @@ Contributions to this project are welcome. If you have any improvements or sugge
 ## License
 
 This launcher is released under the [MIT License](LICENSE). Please refer to the license file for more information.
+
+## Installing Python
+
+**installer**
+[Installer] : (https://www.python.org/downloads/)
+
+## Package Mangager Installations
+
+### Windows (using winget)
+
+1. Open the Command Prompt or PowerShell.
+2. Check if `winget` is installed by running `winget --version`. If not, install it by following the instructions [here](https://docs.microsoft.com/en-us/windows/package-manager/winget/).
+3. Run the following command to install Python using winget:
+   ```shell
+   winget install --id Python.Python
+   ```
+4. Follow the prompts to complete the installation.
+
+### Windows (using Chocolatey)
+
+1. Open the Command Prompt or PowerShell with administrative privileges.
+2. Check if `Chocolatey` is installed by running `choco --version`. If not, install it by following the instructions [here](https://chocolatey.org/install).
+3. Run the following command to install Python using Chocolatey:
+   ```shell
+   choco install python
+   ```
+4. Follow the prompts to complete the installation.
+
+### Linux (using package managers)
+
+#### Debian-based systems (e.g., Ubuntu)
+
+1. Open the Terminal.
+2. Update the package manager's repository information by running:
+   ```shell
+   sudo apt update
+   ```
+3. Install Python by running:
+   ```shell
+   sudo apt install python3
+   ```
+
+#### Red Hat-based systems (e.g., Fedora)
+
+1. Open the Terminal.
+2. Update the package manager's repository information by running:
+   ```shell
+   sudo dnf update
+   ```
+3. Install Python by running:
+   ```shell
+   sudo dnf install python3
+   ```
+
+#### Arch-based systems (e.g., EndeavorOS)
+
+1. Open the Terminal.
+2. Install Python by running:
+   ```shell
+   sudo pacman -Sy python
+   ```
+
+#### OpenSUSE-based systems
+
+1. Open the Terminal.
+2. Install Python by running:
+   ```shell
+   sudo zypper install python3
+   ```
+
+#### Alpine-based systems
+
+1. Open the Terminal.
+2. Install Python by running:
+   ```shell
+   sudo apk add python3
+   ```
+
+### macOS (using Homebrew or MacPorts)
+
+#### Homebrew
+
+1. Open the Terminal.
+2. Install Homebrew if you haven't already by running the following command:
+   ```shell
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+3. Install Python by running:
+   ```shell
+   brew install python
+   ```
+
+#### MacPorts
+
+1. Open the Terminal.
+2. Install MacPorts if you haven't already by following the instructions [here](https://www.macports.org/install.php).
+3. Update MacPorts by running:
+   ```shell
+   sudo port selfupdate
+   ```
+4. Install Python by running:
+   ```shell
+   sudo port install python39
+   ```
+
+## Verify Installation
+
+To verify that Python is installed correctly, open a new terminal or command prompt and run the following command:
+
+```shell
+python --version
+```
+
+You should see the installed Python version printed on the screen.
+```
