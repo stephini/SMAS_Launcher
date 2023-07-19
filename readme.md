@@ -24,7 +24,9 @@ Executable versions for Mac and Linux will be forthcoming.
 
 ## Option 2: Using Python (Recommended for Python users)
 
-Python has tentative support for Mac and Linux.
+[Python](https://www.python.org/downloads/) has tentative support for Mac and Linux. 
+
+*Note: During the installation of Python make sure to check the box that adds Python to PATH.*
 
 1. Download the source code from the repository.
 2. Create a new folder and place the downloaded source code in it.
