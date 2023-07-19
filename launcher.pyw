@@ -32,6 +32,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 
 logs = []
+logs[0] = 1
 mute = False
 # Assets folder stuff
 current_dir = "."
@@ -2039,7 +2040,7 @@ def main():
 		play_animation(build_thread)
 		build_thread.join()
 		if logs[0]:
-			raise Exception(return_values[1])
+			raise Exception(logs[1])
 		if return_values[0]:
 			raise Exception(return_values[1])
 		create_launcher_window()
