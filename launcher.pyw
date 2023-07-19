@@ -2033,7 +2033,7 @@ def main():
 	try:
 		pygame.init
 		pygame.font.init()
-		return_values = [None, None]
+		return_values = [0, ""]
 		build_thread = threading.Thread(target=build_game, args=(return_values,))
 		build_thread.start()
 		play_animation(build_thread)
