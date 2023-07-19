@@ -107,7 +107,7 @@ This launcher is released under the [MIT License](LICENSE). Please refer to the 
    sudo dnf install python3
    ```
 
-#### Arch-based systems (e.g., EndeavorOS)
+#### Arch-based systems (e.g., EndeavorOS, SteamOS)
 
 1. Open the Terminal.
 2. Install Python by running:

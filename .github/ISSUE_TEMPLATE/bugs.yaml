@@ -39,15 +39,9 @@ body:
     attributes:
       label: Operating System
       options:
-      - Windows 11
-      - Windows 10 (64bit)
-      - Windows 10 (32bit)
+      - Windows
       - Linux
-      - macOS 13 (Ventura)
-      - macOS 12 (Monterey)
-      - macOS 11 (Big Sur)
-      - macOS 10.15 (Catalina)
-      - macOS 10.14 (Mojave)
+      - macOS
   - type: input
     id: os-distro
     attributes:
@@ -63,10 +57,17 @@ body:
     validations:
       required: false
   - type: input
-    id: os-distro
+    id: os-other
     attributes:
       label: Additional OS Details. (Optional)
       placeholder: "Example: Arch/Buster/Bookworm/Rex/etc"
+    validations:
+      required: false
+  - type: input
+    id: build
+    attributes:
+      label: Which version are you running?
+      placeholder: "Example: [1.3.2-alpha] python"
     validations:
       required: false
   - type: textarea
