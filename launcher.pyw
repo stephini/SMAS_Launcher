@@ -31,8 +31,7 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 
-logs = []
-logs[0] = 1
+logs = [0, ""]
 mute = False
 # Assets folder stuff
 current_dir = "."
