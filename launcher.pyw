@@ -31,7 +31,7 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 
-
+logs = []
 mute = False
 # Assets folder stuff
 current_dir = "."
@@ -1433,6 +1433,10 @@ def build_game(return_values):
 		logging.exception("%s\n%s", error_message, error_traceback)
 		return_values[0] = 1
 		return_values[1] = error_message
+		print return_values
+		global logs
+		logs = return_values
+
 
 def scan_repo_for_branches(local_path, remote_path):
 	repo = Repo(local_path)
@@ -2034,6 +2038,8 @@ def main():
 		build_thread.start()
 		play_animation(build_thread)
 		build_thread.join()
+		if logs[0]:
+			raise Exception(return_values[1])
 		if return_values[0]:
 			raise Exception(return_values[1])
 		create_launcher_window()

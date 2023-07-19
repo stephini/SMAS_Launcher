@@ -1,0 +1,458 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"get",
+				"get_ticks"
+			],
+			[
+				"accu",
+				"calculateFrameCount"
+			],
+			[
+				"Fram",
+				"frame_time"
+			],
+			[
+				"_poss",
+				"_possitions"
+			],
+			[
+				"button",
+				"button_right_y"
+			],
+			[
+				"button_m",
+				"button_middle_y"
+			],
+			[
+				"button_l",
+				"button_left_y"
+			],
+			[
+				"__",
+				"__init__"
+			],
+			[
+				"return",
+				"return_values"
+			],
+			[
+				"build",
+				"build_thread"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": ".gitignore",
+			"settings":
+			{
+				"buffer_size": 321,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			},
+			"undo_stack":
+			[
+				[
+					9,
+					1,
+					"insert",
+					{
+						"characters": "\n"
+					},
+					"AQAAALcAAAAAAAAAuAAAAAAAAAAAAAAA",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAALcAAAAAAAAAtwAAAAAAAAAAAAAAAADwvw"
+				],
+				[
+					10,
+					1,
+					"insert",
+					{
+						"characters": "S"
+					},
+					"AQAAALgAAAAAAAAAuQAAAAAAAAAAAAAA",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAALgAAAAAAAAAuAAAAAAAAAAAAAAAAADwvw"
+				],
+				[
+					11,
+					1,
+					"left_delete",
+					null,
+					"AQAAALgAAAAAAAAAuAAAAAAAAAABAAAAUw",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAALkAAAAAAAAAuQAAAAAAAAAAAAAAAADwvw"
+				],
+				[
+					12,
+					1,
+					"insert",
+					{
+						"characters": "*.sub"
+					},
+					"BQAAALgAAAAAAAAAuQAAAAAAAAAAAAAAuQAAAAAAAAC6AAAAAAAAAAAAAAC6AAAAAAAAALsAAAAAAAAAAAAAALsAAAAAAAAAvAAAAAAAAAAAAAAAvAAAAAAAAAC9AAAAAAAAAAAAAAA",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAALgAAAAAAAAAuAAAAAAAAAAAAAAAAADwvw"
+				],
+				[
+					13,
+					1,
+					"insert",
+					{
+						"characters": "lime-projec"
+					},
+					"CwAAAL0AAAAAAAAAvgAAAAAAAAAAAAAAvgAAAAAAAAC/AAAAAAAAAAAAAAC/AAAAAAAAAMAAAAAAAAAAAAAAAMAAAAAAAAAAwQAAAAAAAAAAAAAAwQAAAAAAAADCAAAAAAAAAAAAAADCAAAAAAAAAMMAAAAAAAAAAAAAAMMAAAAAAAAAxAAAAAAAAAAAAAAAxAAAAAAAAADFAAAAAAAAAAAAAADFAAAAAAAAAMYAAAAAAAAAAAAAAMYAAAAAAAAAxwAAAAAAAAAAAAAAxwAAAAAAAADIAAAAAAAAAAAAAAA",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAL0AAAAAAAAAvQAAAAAAAAAAAAAAAADwvw"
+				],
+				[
+					14,
+					1,
+					"insert",
+					{
+						"characters": "t"
+					},
+					"AQAAAMgAAAAAAAAAyQAAAAAAAAAAAAAA",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAMgAAAAAAAAAyAAAAAAAAAAAAAAAAADwvw"
+				],
+				[
+					19,
+					3,
+					"right_delete",
+					null,
+					"AwAAACQBAAAAAAAAJAEAAAAAAABzAAAAIyBJZ25vcmUgZ2l0IGJhdGNoIGZpbGVzCmdpdGFkZGZpbGVzLmJhdApnaXRjb21taXQuYmF0CmdpdHB1bGwuYmF0CmdpdHB1c2guYmF0CmdpdGNvbW1pdGFtbWVuZC5iYXQKZ2l0cHVzaGZvcmNlLmJhdCQBAAAAAAAAJAEAAAAAAAABAAAACiQBAAAAAAAAJAEAAAAAAAABAAAACg",
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAJcBAAAAAAAAJAEAAAAAAAAAAAAAAADwvw"
+				]
+			]
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"git push",
+				"git: push"
+			],
+			[
+				"git",
+				"git: commit"
+			],
+			[
+				"git amme",
+				"git: amend previous commit"
+			],
+			[
+				"git commit",
+				"git: commit"
+			],
+			[
+				"git quick stage",
+				"git: quick stage"
+			],
+			[
+				"git stage",
+				"git: quick stage"
+			],
+			[
+				"termin",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"terminus",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"git clo",
+				"git: clone"
+			],
+			[
+				"snippet",
+				"Snippet: New Class"
+			],
+			[
+				"mag",
+				"Snippet: __magic__"
+			],
+			[
+				"Snippet: ",
+				"Snippet: New Class"
+			],
+			[
+				"package control in",
+				"Package Control: Install Package"
+			],
+			[
+				"package control remove pack",
+				"Package Control: Remove Package"
+			],
+			[
+				"package con",
+				"Package Control: List Packages"
+			],
+			[
+				"terminu",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"package control",
+				"Package Control: Install Package"
+			],
+			[
+				"terminal",
+				"Terminal: Open in project folder"
+			],
+			[
+				"package",
+				"Package Control: Install Package"
+			],
+			[
+				"git comm",
+				"git: commit"
+			],
+			[
+				"git pus",
+				"git: push"
+			],
+			[
+				"git c",
+				"git: commit"
+			],
+			[
+				"fold",
+				"Fold Functions"
+			],
+			[
+				"package controli",
+				"Package Control: Install Package"
+			],
+			[
+				"gitpus",
+				"git: push"
+			],
+			[
+				"gitcomm",
+				"git: commit"
+			],
+			[
+				"package control: in",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 196.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher2"
+	],
+	"file_history":
+	[
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher2/launcher.pyw",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher2/.gitignore",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher2/launcher.log",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/modules/dependencyinjector.py",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/modules/git.py",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/modules/sound.py",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/modules/video.py",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/modules/handleframeupdate.py",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/modules/menu.py",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/launcher2.py",
+		"/C/Users/steph_0geszl/AppData/Roaming/Sublime Text/Packages/User/Side Bar.sublime-settings",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/launcher.pyw",
+		"/C/Users/steph_0geszl/Repos/SMAS_Launcher/systemscripts/reqs/Lin+Mac.txt",
+		"/C/Users/steph_0geszl/AppData/Roaming/Sublime Text/Packages/User/steph.tmTheme",
+		"/C/Users/steph_0geszl/AppData/Roaming/Sublime Text/Packages/User/steph.sublime-theme",
+		"/C/Users/steph_0geszl/AppData/Roaming/Sublime Text/Packages/User/StephColorScheme/Python.sublime-color-shceme",
+		"/C/Users/steph_0geszl/Downloads/Monokai.tmTheme",
+		"/C/Users/steph_0geszl/AppData/Roaming/Sublime Text/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/steph_0geszl/AppData/Roaming/Sublime Text/Packages/User/Preferences.sublime-settings"
+	],
+	"find":
+	{
+		"height": 36.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"git"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": true,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": ".gitignore",
+					"selected": true,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 321,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								292,
+								292
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Git Formats/Git Ignore.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 324.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"stack_multiselect": false,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 36.0
+	},
+	"input":
+	{
+		"height": 50.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.GitSavvy":
+	{
+		"height": 186.0
+	},
+	"output.Terminus":
+	{
+		"height": 192.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.show_commit_info":
+	{
+		"height": 192.0
+	},
+	"pinned_build_system": "",
+	"project": "SMAS_LAUNCHER.sublime-project",
+	"replace":
+	{
+		"height": 68.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 327.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
