@@ -63,6 +63,8 @@ else:
 	err_handler("Running on an unrecognized operating system")
 
 
+
+
 # -------------------- Path Stuff --------------------
 script_name = "SMASLauncher"
 install_dir = os.path.join(appdata_path, script_name)
@@ -160,6 +162,7 @@ class TeeLogger:
 
 
 		logging.basicConfig(filename=self.log_file, level=logging.DEBUG)
+		self.loggerSysReport()
 
 	def shift_logs(self):
 		logs_folder = "logs"
@@ -182,7 +185,28 @@ class TeeLogger:
 		if os.path.exists(self.log_file):
 			shutil.move(self.log_file, os.path.join(logs_folder, "log1.log"))
 
-
+	def loggerSysReport():
+		_system_details[
+			platform.system(),
+			platform.release(),
+			platform.version(),
+			platform.machine(),
+			platform.processor(),
+			platform.python_version(),
+			platform.python_implementation(),
+			platform.python_compiler(),
+			platform.python_build()
+		]
+		_header = f"=== System Information ===\n" \
+		       f"System: {_system_details[0]}\n" \
+		       f"Release: {_system_details[1]}\n" \
+		       f"Version: {_system_details[2]}\n" \
+		       f"Machine: {_system_details[3]}\n" \
+		       f"Processor: {_system_details[4]}\n" \
+		       f"Python Version: {_system_details[5]}\n" \
+		       f"Python Compiler: {_system_details[6]}\n" \
+		       f"Python Build: {_system_details[7]}\n"
+		logging.info(_header)
 
 # Redirect stdout and stderr to the tee_logger
 tee_logger = TeeLogger("TeeLogger", "launcher.log", max_logs=5)
@@ -196,7 +220,7 @@ def err_handler(message):
 	pygame.init()
 	err_window = pygame.display.set_mode((WIDTH, HEIGHT))
 	pygame.display.set_caption("Error")
-	font = pygame.font.Font(None, 20)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 20)
 	# Clear the err_window
 	WHITE = (255, 255, 255)
 	BLACK = (0, 0, 0)
@@ -230,6 +254,9 @@ def err_handler(message):
 				if copy_button.collidepoint(mouse_pos):
 					pyperclip.copy(message)  # Copy the message to the clipboard
 					pygame.quit()
+
+
+
 
 def remove_werror_flag(makefile_path):
     with open(makefile_path, 'r') as f:
@@ -577,7 +604,7 @@ def show_options_window():
 	heldtime = 0
 	selectedtab = 0
 	slider = [0,37,53,308,329]
-	font = pygame.font.Font(None, 41)
+	font = pygame.font.Font(SuperMario256, 41)
 
 
 	LblRects = []
@@ -1122,7 +1149,7 @@ def show_Loptions_window():
 		["Hide Launcher", ((343,382), (197, 41)), (200, 200, 200)],
 	]
 
-	font = pygame.font.Font(None, 41)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 41)
 
 
 	LblRects = []
@@ -1675,7 +1702,7 @@ def update_window():
 		["SMAS Launcher", ((5,150), (125, 41)), (255, 255, 255),10],
 		["GLSL Shaders", ((5,250), (87, 41)), (255, 255, 255),10],
 	]
-	font = pygame.font.Font(None, 41)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 41)
 	LblRects = []
 	for label in labels:
 		TxtRect = pygame.Rect(label[1])
@@ -1971,7 +1998,7 @@ def create_main_window_button(main_window, Label, GOW, GOX, GOY, func):
 	GOPLimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonPushedLeft.png" )).convert_alpha(), (GOH,GOH))
 	GOPRimage = pygame.transform.scale(pygame.image.load(os.path.join(launcher_dir,"button","ButtonPushedRight.png" )).convert_alpha(), (GOH,GOH))
 	GOrect = pygame.Rect((GOX-((GOW//2)+GOH),GOY-(GOH//2)),(GOH+GOW+GOH,GOH))
-	font = pygame.font.Font(None, 30)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 30)
 	GOtext = font.render(Label, True, (255,0,255))
 	mouse_pos = pygame.mouse.get_pos()
 	GOclick = False
