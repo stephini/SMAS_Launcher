@@ -605,7 +605,7 @@ def show_options_window():
 	heldtime = 0
 	selectedtab = 0
 	slider = [0,37,53,308,329]
-	font = pygame.font.Font(SuperMario256, 41)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 24)
 
 
 	LblRects = []
@@ -1150,7 +1150,7 @@ def show_Loptions_window():
 		["Hide Launcher", ((343,382), (197, 41)), (200, 200, 200)],
 	]
 
-	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 41)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 24)
 
 
 	LblRects = []
@@ -1703,7 +1703,7 @@ def update_window():
 		["SMAS Launcher", ((5,150), (125, 41)), (255, 255, 255),10],
 		["GLSL Shaders", ((5,250), (87, 41)), (255, 255, 255),10],
 	]
-	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 41)
+	font = pygame.font.Font(os.path.join(asspat(), "SuperMario256.ttf"), 24)
 	LblRects = []
 	for label in labels:
 		TxtRect = pygame.Rect(label[1])
