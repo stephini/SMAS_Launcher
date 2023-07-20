@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 import logging
 import traceback
 from PIL import Image
@@ -28,8 +29,8 @@ from dulwich.objects import Commit
 from dulwich import porcelain, index
 from dulwich.index import build_index_from_tree
 from pygame.locals import *
-from OpenGL.GL import *
-from OpenGL.GL.shaders import compileShader, compileProgram
+#from OpenGL.GL import *
+#from OpenGL.GL.shaders import compileShader, compileProgram
 
 logs = [0, ""]
 mute = False
@@ -185,8 +186,8 @@ class TeeLogger:
 		if os.path.exists(self.log_file):
 			shutil.move(self.log_file, os.path.join(logs_folder, "log1.log"))
 
-	def loggerSysReport():
-		_system_details[
+	def loggerSysReport(self):
+		_system_details = [
 			platform.system(),
 			platform.release(),
 			platform.version(),
