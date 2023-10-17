@@ -1422,6 +1422,8 @@ def build_game(return_values):
 
 		if not os.path.exists(os.path.join(smw_dir, ".git")):
 			git_clone("https://github.com/snesrev/smw.git", os.path.join(smw_dir))
+			for file_name in ["smw.sfc"]:
+			   shutil.copy2(os.path.join(install_dir, file_name), os.path.join(smw_dir, file_name))
 			for file_name in ["smb1.zst", "smbll.zst"]: #user provides their own smas.sfc and smw.sfc files.
 			   shutil.copy2(os.path.join(smw_dir, "other", file_name), os.path.join(install_dir, file_name))
 
@@ -1454,6 +1456,9 @@ def build_game(return_values):
 		for file_name in ["smas.sfc"]:
 			if os.path.exists(os.path.join(install_dir, file_name)):
 				shutil.move(os.path.join(install_dir, file_name),os.path.join(launcher_dir, file_name))
+		for file_name in ["smw_assets.dat"]:
+			if os.path.exists(os.path.join(smw_dir, file_name)):
+				shutil.move(os.path.join(smw_dir, file_name),os.path.join(install_dir, file_name))
 	except Exception as e:
 		# Handle exceptions and log the error
 		error_message = f"!!!!!!!!!!!!!!!!!!!!!!!!!vvvvvvvvvv!!!!!!!!!!!!!!!!!!!!!!!!!\nAn error occurred in thread \"build_thread\": \n{str(e)}\n!!!!!!!!!!!!!!!!!!!!!!!!!^^^^^^^^^^!!!!!!!!!!!!!!!!!!!!!!!!!"
