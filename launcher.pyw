@@ -121,7 +121,7 @@ def asspat(): #assets path since i keep asking "Wtf is asspat?" only to remember
 		if sysenv == 1:
 			ass_pat = os.path.join(sys._MEIPASS, "assets")#asspat windows
 		elif sysenv == 2 or sysenv == 3:
-			ass_pat = os.path.join(sys._MEIPASSBASE, "assets")#asspat mac+linux
+			ass_pat = os.path.join(sys._MEIPASS, "assets")#asspat mac+linux
 	elif os.path.exists(os.path.join(".", "assets")):
 		ass_pat = os.path.join(".", "assets")#asspat script
 	else:
@@ -2088,7 +2088,7 @@ def main():
 		sys.stdout = sys.__stdout__
 		sys.stderr = sys.__stderr__
 		tee_logger.close() # Close the log file
-		quit()
+		sys.exit(1)
 
 if __name__ == "__main__":
 	main()
